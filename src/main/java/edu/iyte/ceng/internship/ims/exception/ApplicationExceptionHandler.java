@@ -1,11 +1,14 @@
 package edu.iyte.ceng.internship.ims.exception;
 
 import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
-import edu.iyte.ceng.internship.ims.entity.Firm;
-import edu.iyte.ceng.internship.ims.entity.Student;
-import edu.iyte.ceng.internship.ims.entity.User;
+import jakarta.persistence.Column;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Path;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.type.filter.AnnotationTypeFilter;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -17,15 +20,13 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import jakarta.validation.ConstraintViolationException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.lang.reflect.Field;
+import java.util.*;
 
 @ControllerAdvice
 public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler {
@@ -39,25 +40,49 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         List<AttributeError> errors = new ArrayList<>();
 
-        final String[] integrityErrors = new String[] {
-                "UC_EMAIL", User.entityName, "email", "Unique", "",
-                "UC_STUDENT_NUMBER", Student.entityName, "studentNumber", "Unique", "",
-                "UC_FIRM_NAME", Firm.entityName, "firmName", "Unique", "",
-                "UC_BUSINESS_REGISTRATION_NUMBER", Firm.entityName, "businessRegistrationNumber", "Unique", ""
-        };
+        // Look for all classes annotated with Table (which are entity classes)
+        ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
+        scanner.addIncludeFilter(new AnnotationTypeFilter(Table.class));
+        for (BeanDefinition bd : scanner.findCandidateComponents("edu.iyte.ceng.internship.ims.entity")) {
+            Class<?> clazz;
+            try {
+                clazz = Class.forName(bd.getBeanClassName());
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
 
-        String message = ex.getMessage();
-        for (int i = 0; i < integrityErrors.length / 5; i++) {
-            String constraintName = integrityErrors[i * 5];
-            if (message.contains(constraintName)) {
-                AttributeError error = AttributeError.builder()
-                        .entity(integrityErrors[i*5 + 1])
-                        .attribute(integrityErrors[i*5 + 2])
-                        .constraint(integrityErrors[i*5 + 3])
-                        .message(integrityErrors[i*5 + 4])
-                        .build();
+            // Get entity name
+            AssociatedWithEntity awe = clazz.getAnnotation(AssociatedWithEntity.class);
+            String entityName = awe.entityName();
 
-                errors.add(error);
+            // Map each column name in the database to the corresponding attribute name in the entity class.
+            Map<String, String> attributeToColumnMap = new HashMap<>();
+            for (Field field : clazz.getDeclaredFields()) {
+                if (field.isAnnotationPresent(Column.class)) {
+                    Column columnAnnotation = field.getAnnotation(Column.class);
+                    attributeToColumnMap.put(columnAnnotation.name(), field.getName());
+                }
+            }
+
+            // Iterate over all uniqueness constraints in the table.
+            Table tbl = clazz.getAnnotation(Table.class);
+            for (UniqueConstraint uniqueConstraint : tbl.uniqueConstraints()) {
+                String constraintName = uniqueConstraint.name();
+                // If the exception that was thrown contains the name of the uniqueness constraint in its
+                // message, determine attribute name and add the error to the list.
+                if (ex.getMessage().contains(constraintName)) {
+                    String columnName = uniqueConstraint.columnNames()[0];
+                    String attributeName = attributeToColumnMap.get(columnName);
+
+                    AttributeError error = AttributeError.builder()
+                            .entity(entityName)
+                            .attribute(attributeName)
+                            .constraint("Unique")
+                            .message("")
+                            .build();
+
+                    errors.add(error);
+                }
             }
         }
 
