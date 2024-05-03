@@ -30,8 +30,7 @@ public class StudentController {
     }
 
     @PutMapping("/update-student-account/{userId}")
-    public ResponseEntity<Student> updateStudent(@PathVariable("userId") String userId, @RequestBody UpdateStudentRequest updateStudent) {
-        System.err.println(updateStudent);
+    public ResponseEntity<Student> updateStudent(@PathVariable("userId") String userId, @Valid @RequestBody UpdateStudentRequest updateStudent) {
         Student student = studentService.updateStudent(Long.parseLong(userId), updateStudent);
         return new ResponseEntity<>(student, HttpStatus.OK);
     }

@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,10 +22,16 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "firm")
+@Table(name = "firm", uniqueConstraints = {
+    @UniqueConstraint(name = "UC_FIRM_NAME", columnNames = { "firm_name" }),
+    @UniqueConstraint(name = "UC_BUSINESS_REGISTRATION_NUMBER", columnNames = { "business_registration_number" })
+})
 @RequiredArgsConstructor
 @NoArgsConstructor
+@AssociatedWithEntity(entityName = Firm.entityName)
 public class Firm {
+    public static final String entityName = "Firm";
+
     @Id
     @NonNull
     @Column(name = "user_id")
@@ -42,7 +49,7 @@ public class Firm {
 
     @NonNull
     @NotBlank
-    @Column(name = "firm_name", unique = true)
+    @Column(name = "firm_name")
     private String firmName;
 
     @NonNull
@@ -52,7 +59,7 @@ public class Firm {
 
     @NonNull
     @NotBlank
-    @Column(name = "business_registration_number", unique = true)
+    @Column(name = "business_registration_number")
     private String businessRegistrationNumber;
 
     @NonNull

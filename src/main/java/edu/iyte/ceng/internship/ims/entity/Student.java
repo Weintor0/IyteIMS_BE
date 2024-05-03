@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import lombok.Getter;
@@ -22,10 +23,15 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "student")
+@Table(name = "student", uniqueConstraints = {
+    @UniqueConstraint(name = "UC_STUDENT_NUMBER", columnNames = {"student_number"})
+})
 @RequiredArgsConstructor
 @NoArgsConstructor
+@AssociatedWithEntity(entityName = Student.entityName)
 public class Student {
+    public static final String entityName = "Student";
+
     @Id
     @NonNull
     @Column(name = "user_id")
@@ -38,7 +44,7 @@ public class Student {
 
     @NonNull
     @NotBlank
-    @Column(name = "student_number", unique = true)
+    @Column(name = "student_number")
     private String studentNumber;
 
     @NonNull

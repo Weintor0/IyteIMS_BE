@@ -1,8 +1,10 @@
+#!/usr/bin/node
+
 const users = require('./users')
 
 function testStudent() {
   const email = "studentname@university.edu";
-  const password = "123456";
+  const password = "";//"123456";
 
   const updatedEmail = 'studentname@gmail.com';
   const updatedPassword = 'abcdef';
@@ -31,8 +33,8 @@ function testStudent() {
       console.log(`New Login Token: ${token}\n`);
       loginToken = token;
     })
-    .catch((error) => {
-      console.log(error)
+    .catch(([errorCode, errorBody]) => {
+      console.log(errorCode, JSON.stringify(errorBody));
     }
   );
 }
@@ -71,11 +73,11 @@ function testFirm() {
     .then((firm) => {
       console.log(`Updated Firm information: ${JSON.stringify(firm)}\n`);
     })
-    .catch((error) => {
-      console.log(error)
+    .catch(([errorCode, errorBody]) => {
+      console.log(errorCode, JSON.stringify(errorBody));
     }
   );
 }
 
-testFirm().then(() => testStudent());
-
+//testFirm().then(() => testStudent());
+testStudent();

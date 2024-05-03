@@ -30,7 +30,7 @@ public class FirmController {
     }
 
     @PutMapping("/update-firm-account/{userId}")
-    public ResponseEntity<Firm> updateFirm(@PathVariable("userId") String userId, @RequestBody UpdateFirmRequest updateRequest) {
+    public ResponseEntity<Firm> updateFirm(@PathVariable("userId") String userId, @Valid @RequestBody UpdateFirmRequest updateRequest) {
         Firm firm = firmService.updateFirm(Long.parseLong(userId), updateRequest);
         return new ResponseEntity<>(firm, HttpStatus.OK);
     }

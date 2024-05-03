@@ -14,7 +14,7 @@ function loginRequest(email, password) {
       if (!error && response.statusCode === 200) {
         resolve([response.headers['authorization'], response.body]);
       } else {
-        reject(response.statusCode);
+        reject([response.statusCode, response.body]);
       }
     }
 
@@ -39,7 +39,7 @@ function registrationRequest(userRole, registerData) {
       } else if (response.statusCode === 201) {
         resolve(response.body);
       } else {
-        reject(response.statusCode);
+        reject([response.statusCode, response.body]);
       }
     }
 
@@ -53,7 +53,7 @@ function accountInformationRetrievalRequest(userRole, userId, token) {
       if (!error && response.statusCode === 200) {
         resolve(response.body);
       } else {
-        reject(response.statusCode);
+        reject([response.statusCode, response.body]);
       }
     }
 
@@ -67,7 +67,7 @@ function accountInformationUpdateRequest(userRole, userId, data, token) {
       if (!error && response.statusCode === 200) {
         resolve(response.body);
       } else {
-        reject(response.statusCode);
+        reject([response.statusCode, response.body]);
       }
     }
 

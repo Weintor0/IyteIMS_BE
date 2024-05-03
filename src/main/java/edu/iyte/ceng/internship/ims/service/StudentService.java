@@ -8,7 +8,7 @@ import edu.iyte.ceng.internship.ims.entity.Student;
 import edu.iyte.ceng.internship.ims.entity.User;
 import edu.iyte.ceng.internship.ims.entity.UserRole;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.ErrorCode;
+import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
 import edu.iyte.ceng.internship.ims.model.request.CreateStudentRequest;
 import edu.iyte.ceng.internship.ims.model.request.UpdateStudentRequest;
 import edu.iyte.ceng.internship.ims.repository.StudentRepository;
@@ -40,7 +40,7 @@ public class StudentService {
 
     public Student getStudent(Long userId) {
         Student student = studentRepository.findStudentById(userId).orElseThrow(
-            () -> new BusinessException(ErrorCode.AccountMissing, 
+            () -> new BusinessException(BusinessExceptionType.AccountMissing, 
             "Student with User ID " + userId + " does not exist")
         );
 
@@ -65,13 +65,13 @@ public class StudentService {
         switch (currentUser.getUserRole()) {
             case Student:
                 if (!currentUser.getUserId().equals(userId)) {
-                    throw new BusinessException(ErrorCode.Forbidden, 
+                    throw new BusinessException(BusinessExceptionType.Forbidden, 
                     "Students can only access their own profile information.");
                 }
                 break;
             case Firm:
                 // TODO
-                throw new BusinessException(ErrorCode.Forbidden, 
+                throw new BusinessException(BusinessExceptionType.Forbidden, 
                 "Firms can only access the information of students working within their company.");
             default:
                 break;
