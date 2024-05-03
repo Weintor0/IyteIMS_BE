@@ -3,21 +3,29 @@ package edu.iyte.ceng.internship.ims.exception;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 
 @Data
 public class ErrorResponse {
     private final LocalDateTime timestamp;
+    private final List<Error> errors;
 
-    private final String errorCode;
-    private final String errorMessage;
-
-    private final List<AttributeError> attributeErrors;
-
-    public ErrorResponse(String errorCode, String errorMessage, List<AttributeError> attributeErrors) {
+    public ErrorResponse(List<Error> errors) {
         this.timestamp = LocalDateTime.now();
-        this.errorCode = errorCode;
-        this.errorMessage = errorMessage;
-        this.attributeErrors = attributeErrors;
+        this.errors = errors;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    @Builder
+    @Data
+    public static class Error {
+        private String entity;
+        private String attribute;
+        private String constraint;
+        private String message;
     }
 }

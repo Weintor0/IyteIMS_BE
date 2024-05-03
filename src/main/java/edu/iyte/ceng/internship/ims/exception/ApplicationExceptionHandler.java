@@ -32,13 +32,20 @@ import java.util.*;
 public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({BusinessException.class})
     public ResponseEntity<Object> handleBusinessException(BusinessException ex) {
-        ErrorResponse response = new ErrorResponse(ex.getErrorCode().name(), ex.getMessage(), Arrays.asList());
+        ErrorResponse.Error error = ErrorResponse.Error.builder()
+                .constraint(ex.getErrorCode().name())
+                .message(ex.getMessage())
+                .entity(null)
+                .attribute(null)
+                .build();
+
+        ErrorResponse response = new ErrorResponse(List.of(error));
         return new ResponseEntity<>(response, ex.getErrorCode().getHttpStatusCode());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        List<AttributeError> errors = new ArrayList<>();
+        List<ErrorResponse.Error> errors = new ArrayList<>();
 
         // Look for all classes annotated with Table (which are entity classes)
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -74,7 +81,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                     String columnName = uniqueConstraint.columnNames()[0];
                     String attributeName = attributeToColumnMap.get(columnName);
 
-                    AttributeError error = AttributeError.builder()
+                    ErrorResponse.Error error = ErrorResponse.Error.builder()
                             .entity(entityName)
                             .attribute(attributeName)
                             .constraint("Unique")
@@ -86,13 +93,13 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
             }
         }
 
-        ErrorResponse response = new ErrorResponse("ConstraintViolation", "", errors);
+        ErrorResponse response = new ErrorResponse(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex) {
-        List<AttributeError> errors = new ArrayList<>();
+        List<ErrorResponse.Error> errors = new ArrayList<>();
 
         ConstraintViolation<?> violation = ex.getConstraintViolations().iterator().next();
 
@@ -105,7 +112,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
         String constraint = violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName();
         String message = violation.getMessage();
 
-        AttributeError error = AttributeError.builder()
+        ErrorResponse.Error error = ErrorResponse.Error.builder()
                 .entity(entity)
                 .attribute(attribute)
                 .constraint(constraint)
@@ -113,7 +120,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 .build();
         errors.add(error);
 
-        ErrorResponse response = new ErrorResponse("ConstraintViolation", "", errors);
+        ErrorResponse response = new ErrorResponse(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -122,7 +129,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
-        List<AttributeError> errors = new ArrayList<>();
+        List<ErrorResponse.Error> errors = new ArrayList<>();
 
         // Get entity name where the constraint was violated.
         Object target = ex.getTarget();
@@ -133,9 +140,8 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
 
         List<ObjectError> allErrors = ex.getBindingResult().getAllErrors();
         for (ObjectError err : allErrors) {
-            if (err instanceof FieldError) {
-                FieldError fieldError = (FieldError)err;
-                AttributeError error = AttributeError.builder()
+            if (err instanceof FieldError fieldError) {
+                ErrorResponse.Error error = ErrorResponse.Error.builder()
                         .entity(entity)
                         .attribute(fieldError.getField())
                         .constraint(fieldError.getCode())
@@ -145,7 +151,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
             }
         }
 
-        ErrorResponse response = new ErrorResponse("ConstraintViolation", "", errors);
+        ErrorResponse response = new ErrorResponse(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 }

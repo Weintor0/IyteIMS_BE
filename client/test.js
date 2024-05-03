@@ -4,14 +4,14 @@ const users = require('./users')
 
 function testStudent() {
   const email = "studentname@university.edu";
-  const password = "";//"123456";
+  const password = "123456";
 
   const updatedEmail = 'studentname@gmail.com';
   const updatedPassword = 'abcdef';
 
   let loginToken = undefined;
 
-  return users.registerStudent("123456789", "01.01.2000", "Abc", "Def", email, password)
+  return users.registerStudent("123456780", "01.01.2000", "Abc", "Def", email, password)
     .then((userId) => {
       console.log(`Created user: ${userId}\n`);
       return users.loginRequest(email, password);
@@ -79,5 +79,23 @@ function testFirm() {
   );
 }
 
-//testFirm().then(() => testStudent());
-testStudent();
+function unauthorizedAccessAttempt() {
+  const email = "info@abcd.com";
+  const password = "xyzt";
+
+  users.loginRequest(email, password).then(
+    ([token, userId]) => {
+      return users.getStudent(2, token)
+  }).then((student) => {
+    console.log("Successful");
+    console.log(JSON.stringify(student));
+  }).catch(([errorCode, errorBody]) => {
+    console.log("Unsuccessful");
+    console.log(errorCode, JSON.stringify(errorBody));
+  })
+}
+
+testFirm()
+  .then(() => testStudent())
+  .then(() => unauthorizedAccessAttempt());
+
