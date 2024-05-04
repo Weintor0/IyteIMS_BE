@@ -129,9 +129,9 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
 
     @Override
     protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
-                                                                  HttpHeaders headers,
-                                                                  HttpStatusCode status,
-                                                                  WebRequest request) {
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatusCode status,
+                                                                  @NonNull WebRequest request) {
         List<ErrorResponse.Error> errors = new ArrayList<>();
         Throwable thr = ex.getCause();
         if (thr instanceof InvalidFormatException formatException) {
