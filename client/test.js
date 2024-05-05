@@ -79,11 +79,11 @@ function testFirm() {
   );
 }
 
-function unauthorizedAccessAttempt() {
+function unauthorizedAccessAttempt1() {
   const email = "info@abcd.com";
   const password = "xyzt";
 
-  users.loginRequest(email, password).then(
+  return users.loginRequest(email, password).then(
     ([token, userId]) => {
       return users.getStudent(2, token)
   }).then((student) => {
@@ -92,10 +92,20 @@ function unauthorizedAccessAttempt() {
   }).catch(([errorCode, errorBody]) => {
     console.log("Unsuccessful");
     console.log(errorCode, JSON.stringify(errorBody));
-  })
+  });
+}
+
+function unauthorizedAccessAttempt2() {
+    return users.getStudent('1', 'Bearer asdasdasdasd')
+      .then((student) => {
+        console.log(JSON.stringify(student));
+    }).catch(([errorCode, errorBody]) => {
+        console.log(errorCode, JSON.stringify(errorBody));
+    });
 }
 
 testFirm()
   .then(() => testStudent())
-  .then(() => unauthorizedAccessAttempt());
+  .then(() => unauthorizedAccessAttempt1())
+  .then(() => unauthorizedAccessAttempt2());
 

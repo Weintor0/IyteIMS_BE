@@ -1,5 +1,7 @@
 package edu.iyte.ceng.internship.ims.controller;
 
+import edu.iyte.ceng.internship.ims.model.request.LoginRequest;
+import edu.iyte.ceng.internship.ims.service.AuthenticationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,11 +24,14 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/")
 public class FirmController {
     private FirmService firmService;
+    private AuthenticationService authenticationService;
 
     @PostMapping("/register/firm")
     public ResponseEntity<String> createFirm(@Valid @RequestBody CreateFirmRequest createFirmRequest) {
-        String userId = firmService.createFirm(createFirmRequest).toString();
-        return new ResponseEntity<>(userId, HttpStatus.CREATED);
+        firmService.createFirm(createFirmRequest);
+        String token = authenticationService.login(
+                new LoginRequest(createFirmRequest.getEmail(), createFirmRequest.getPassword())).getBody();
+        return new ResponseEntity<>(token, HttpStatus.CREATED);
     }
 
     @PutMapping("/update-firm-account/{userId}")
