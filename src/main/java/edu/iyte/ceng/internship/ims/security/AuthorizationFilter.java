@@ -1,14 +1,12 @@
-package edu.iyte.ceng.internship.ims.security.filter;
+package edu.iyte.ceng.internship.ims.security;
 
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 
-import edu.iyte.ceng.internship.ims.security.SecurityConstants;
-
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,7 +35,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             .verify(token)
             .getSubject();
 
-        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, Arrays.asList());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(user, null, List.of());
         SecurityContextHolder.getContext().setAuthentication(authentication);
         filterChain.doFilter(request, response);
     }
