@@ -1,5 +1,7 @@
 package edu.iyte.ceng.internship.ims.exception;
 
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Table;
@@ -14,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.NonNull;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -125,6 +128,37 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
     }
 
     @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException exception,
+                                                                  @NonNull HttpHeaders headers,
+                                                                  @NonNull HttpStatusCode status,
+                                                                  @NonNull WebRequest request) {
+        List<ErrorResponse.Error> errors = new ArrayList<>();
+        Throwable cause = exception.getCause();
+        if (cause instanceof InvalidFormatException formatException) {
+            List<JsonMappingException.Reference> path = formatException.getPath();
+            for (JsonMappingException.Reference originOfError : path) {
+                String field = originOfError.getFieldName();
+                AssociatedWithEntity entityAnnotation = originOfError.getFrom().getClass().getAnnotation(AssociatedWithEntity.class);
+                String entity = entityAnnotation.entityName();
+
+                ErrorResponse.Error errorEntry = ErrorResponse.Error.builder()
+                        .entity(entity)
+                        .attribute(field)
+                        .constraint("Format")
+                        .message(cause.getMessage())
+                        .build();
+
+                errors.add(errorEntry);
+            }
+        } else {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        ErrorResponse response = new ErrorResponse(errors);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(@NonNull MethodArgumentNotValidException ex,
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
@@ -148,6 +182,8 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                         .message(fieldError.getDefaultMessage())
                         .build();
                 errors.add(error);
+            } else {
+                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
             }
         }
 
