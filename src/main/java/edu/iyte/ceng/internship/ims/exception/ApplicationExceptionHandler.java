@@ -128,24 +128,24 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
     }
 
     @Override
-    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException exception,
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
         List<ErrorResponse.Error> errors = new ArrayList<>();
-        Throwable thr = ex.getCause();
-        if (thr instanceof InvalidFormatException formatException) {
+        Throwable cause = exception.getCause();
+        if (cause instanceof InvalidFormatException formatException) {
             List<JsonMappingException.Reference> path = formatException.getPath();
-            for (JsonMappingException.Reference ref : path) {
-                String field = ref.getFieldName();
-                AssociatedWithEntity entityAnnotation = ref.getFrom().getClass().getAnnotation(AssociatedWithEntity.class);
+            for (JsonMappingException.Reference originOfError : path) {
+                String field = originOfError.getFieldName();
+                AssociatedWithEntity entityAnnotation = originOfError.getFrom().getClass().getAnnotation(AssociatedWithEntity.class);
                 String entity = entityAnnotation.entityName();
 
                 ErrorResponse.Error errorEntry = ErrorResponse.Error.builder()
                         .entity(entity)
                         .attribute(field)
                         .constraint("Format")
-                        .message(thr.getMessage())
+                        .message(cause.getMessage())
                         .build();
 
                 errors.add(errorEntry);
