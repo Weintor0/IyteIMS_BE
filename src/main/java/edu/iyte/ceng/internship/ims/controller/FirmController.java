@@ -29,9 +29,9 @@ public class FirmController {
     @PostMapping("/register/firm")
     public ResponseEntity<String> createFirm(@Valid @RequestBody CreateFirmRequest createFirmRequest) {
         firmService.createFirm(createFirmRequest);
-        String token = authenticationService.login(
+        ResponseEntity<String> response = authenticationService.login(
                 new LoginRequest(createFirmRequest.getEmail(), createFirmRequest.getPassword())).getBody();
-        return new ResponseEntity<>(token, HttpStatus.CREATED);
+        return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
     }
 
     @PutMapping("/update-firm-account/{userId}")

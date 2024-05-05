@@ -29,9 +29,9 @@ public class StudentController {
     @PostMapping("/register/student")
     public ResponseEntity<String> createStudent(@Valid @RequestBody CreateStudentRequest createRequest) {
         studentService.createStudent(createRequest);
-        String token = authenticationService.login(
-                new LoginRequest(createRequest.getEmail(), createRequest.getPassword())).getBody();
-        return new ResponseEntity<>(token, HttpStatus.CREATED);
+        ResponseEntity<String> response = authenticationService.login(
+                new LoginRequest(createRequest.getEmail(), createRequest.getPassword()))
+        return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
     }
 
     @PutMapping("/update-student-account/{userId}")
