@@ -46,6 +46,7 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setHeader("Content-Type", "text/plain");
         response.getWriter().write(failed.getMessage());
         response.getWriter().flush();
     }
@@ -57,6 +58,7 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
             .withSubject(authResult.getName())
             .withExpiresAt(new Date(System.currentTimeMillis() + SecurityConstants.TOKEN_EXPIRATION))
             .sign(Algorithm.HMAC512(SecurityConstants.SECRET_KEY));
+        response.setHeader("Content-Type", "text/plain");
         response.addHeader(SecurityConstants.AUTHORIZATION, SecurityConstants.BEARER + token);
         
         // Return the user id in the body of the response.
