@@ -30,7 +30,7 @@ public class StudentController {
     public ResponseEntity<String> createStudent(@Valid @RequestBody CreateStudentRequest createRequest) {
         studentService.createStudent(createRequest);
         ResponseEntity<String> response = authenticationService.login(
-                new LoginRequest(createRequest.getEmail(), createRequest.getPassword()))
+                new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));
         return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
     }
 

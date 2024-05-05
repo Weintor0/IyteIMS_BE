@@ -30,7 +30,7 @@ public class FirmController {
     public ResponseEntity<String> createFirm(@Valid @RequestBody CreateFirmRequest createFirmRequest) {
         firmService.createFirm(createFirmRequest);
         ResponseEntity<String> response = authenticationService.login(
-                new LoginRequest(createFirmRequest.getEmail(), createFirmRequest.getPassword())).getBody();
+                new LoginRequest(createFirmRequest.getEmail(), createFirmRequest.getPassword()));
         return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
     }
 
