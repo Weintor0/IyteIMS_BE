@@ -45,7 +45,6 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
         ErrorResponse response = new ErrorResponse(List.of(error));
         return new ResponseEntity<>(response, ex.getErrorCode().getHttpStatusCode());
     }
-
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         List<ErrorResponse.Error> errors = new ArrayList<>();

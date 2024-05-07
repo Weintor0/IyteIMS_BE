@@ -1,5 +1,7 @@
 package edu.iyte.ceng.internship.ims.controller;
 
+import edu.iyte.ceng.internship.ims.model.request.LoginRequest;
+import edu.iyte.ceng.internship.ims.service.AuthenticationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,11 +24,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/")
 public class StudentController {
     private StudentService studentService;
+    private AuthenticationService authenticationService;
 
     @PostMapping("/register/student")
     public ResponseEntity<String> createStudent(@Valid @RequestBody CreateStudentRequest createRequest) {
-        String userId = studentService.createStudent(createRequest).toString();
-        return new ResponseEntity<>(userId, HttpStatus.CREATED);
+        studentService.createStudent(createRequest);
+        ResponseEntity<String> response = authenticationService.login(
+                new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));
+        return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
     }
 
     @PutMapping("/update-student-account/{userId}")
