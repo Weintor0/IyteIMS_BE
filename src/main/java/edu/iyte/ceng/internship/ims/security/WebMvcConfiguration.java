@@ -14,5 +14,12 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 .allowedMethods("POST")
                 .allowedOrigins("*")
                 .allowCredentials(false);
+
+        registry.addMapping("/register/**")
+                .allowedHeaders("*")
+                .exposedHeaders("Authorization")
+                .allowedMethods("POST")
+                .allowedOrigins("*")
+                .allowCredentials(false);
     }
 }
