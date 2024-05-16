@@ -6,7 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.iyte.ceng.internship.ims.entity.Student;
 import edu.iyte.ceng.internship.ims.entity.User;
-import edu.iyte.ceng.internship.ims.entity.UserRole;
+//import edu.iyte.ceng.internship.ims.entity.UserRole; // TODO
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
 import edu.iyte.ceng.internship.ims.model.request.CreateStudentRequest;
@@ -23,19 +23,17 @@ public class StudentService {
     @Transactional(rollbackFor = Exception.class)
     public Long createStudent(CreateStudentRequest createRequest) {
         User user = userService.createUser(
-            UserRole.Student, 
             createRequest.getEmail(), 
             createRequest.getPassword());
 
         Student student = new Student(
-            user.getUserId(),
             user,
             createRequest.getStudentNumber(),
             createRequest.getBirthDate(),
             createRequest.getName(),
             createRequest.getSurname());
 
-        return studentRepository.save(student).getUser().getUserId();
+        return studentRepository.save(student).getUser().getId();
     }
 
     public Student getStudent(Long userId) {
@@ -55,16 +53,22 @@ public class StudentService {
             updateRequest.getPassword()
         );
 
-        return studentRepository.findById(userId).get();
+        return studentRepository.findById(userId).orElseThrow(
+                () -> new IllegalStateException("User disappeared within a single transaction.")
+        );
     }
 
     private void ensureReadPrivilege(Long userId) {
+        // TODO: User role olmadığında student ve firm tablolarını tek tek aramadan currentUser'ın tipinin ne olduğunu nasıl bileceğiz?
+
+        /*
+
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userService.getUserByEmail(currentEmail);
 
         switch (currentUser.getUserRole()) {
             case Student:
-                if (!currentUser.getUserId().equals(userId)) {
+                if (!currentUser.getId().equals(userId)) {
                     throw new BusinessException(BusinessExceptionType.Forbidden, 
                     "Students can only access their own profile information.");
                 }
@@ -76,5 +80,7 @@ public class StudentService {
             default:
                 break;
         }
+
+        */
     }
 }

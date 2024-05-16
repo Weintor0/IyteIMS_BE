@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class SwaggerConfig {
+public class DocsConfig {
 
     @Bean
     public OpenAPI customizeOpenAPI() {
@@ -34,8 +34,8 @@ public class SwaggerConfig {
         openAPI.setComponents(components);
 
         Info info = new Info();
-        info.setTitle("Project Title");
-        info.setDescription("Some description about the project.");
+        info.setTitle("Internship Management System");
+        info.setDescription("Internship Management System for IZTECH CENG Department");
         info.setVersion("V0");
         openAPI.setInfo(info);
         openAPI.setSpecVersion(SpecVersion.V30);

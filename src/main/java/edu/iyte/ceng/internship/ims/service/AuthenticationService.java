@@ -43,6 +43,6 @@ public class AuthenticationService {
 
         HttpHeaders responseHeaders = new HttpHeaders();
         responseHeaders.add(SecurityConstants.AUTHORIZATION, SecurityConstants.BEARER + token);
-        return new ResponseEntity<>(user.getUserId().toString(), responseHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(user.getId().toString(), responseHeaders, HttpStatus.OK);
     }
 }

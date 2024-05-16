@@ -5,7 +5,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import edu.iyte.ceng.internship.ims.entity.User;
-import edu.iyte.ceng.internship.ims.entity.UserRole;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
 import edu.iyte.ceng.internship.ims.repository.UserRepository;
@@ -18,9 +17,8 @@ public class UserService {
     private UserRepository userRepository;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public User createUser(UserRole role, String email, String password) {
+    public User createUser(String email, String password) {
         User user = new User();
-        user.setUserRole(role);
         user.setEmail(email);
         user.setPassword(bCryptPasswordEncoder.encode(password));
         return userRepository.save(user);

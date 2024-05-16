@@ -26,18 +26,8 @@ import lombok.NonNull;
 })
 @NoArgsConstructor
 @AssociatedWithEntity(entityName = User.entityName)
-public class User {
+public class User extends BaseEntity {
     public static final String entityName = "User";
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
-    private Long userId;
-
-    @NonNull
-    @Column(name = "user_role", nullable = false)
-    @Enumerated(EnumType.STRING)
-    private UserRole userRole;
 
     @Email
     @NotBlank(message = "Email cannot be blank")

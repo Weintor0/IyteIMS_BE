@@ -13,11 +13,8 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
 
 @Getter
 @Setter
@@ -26,53 +23,48 @@ import lombok.Setter;
     @UniqueConstraint(name = "UC_FIRM_NAME", columnNames = { "firm_name" }),
     @UniqueConstraint(name = "UC_BUSINESS_REGISTRATION_NUMBER", columnNames = { "business_registration_number" })
 })
-@RequiredArgsConstructor
+@AllArgsConstructor
 @NoArgsConstructor
 @AssociatedWithEntity(entityName = Firm.entityName)
-public class Firm {
+public class Firm extends BaseEntity {
     public static final String entityName = "Firm";
-
-    @Id
-    @NonNull
-    @Column(name = "user_id")
-    private Long id;
 
     @OneToOne(cascade = CascadeType.ALL)
     @PrimaryKeyJoinColumn(name = "user_id", referencedColumnName = "user_id")
-    @NonNull
+    @NotNull
     private User user;
 
-    @NonNull
+    @NotNull
     @Column(name = "register_date")
     @JsonFormat(pattern = "dd.MM.yyyy")
     private Date registerDate;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "firm_name")
     private String firmName;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "type_of_business")
     private String typeOfBusiness;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "business_registration_number")
     private String businessRegistrationNumber;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "legal_structure")
     private String legalStructure;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "phone_number")
     private String phoneNumber;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "address")
     private String address;

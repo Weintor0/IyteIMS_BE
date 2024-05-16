@@ -6,7 +6,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import edu.iyte.ceng.internship.ims.entity.Firm;
 import edu.iyte.ceng.internship.ims.entity.User;
-import edu.iyte.ceng.internship.ims.entity.UserRole;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
 import edu.iyte.ceng.internship.ims.model.request.CreateFirmRequest;
@@ -23,12 +22,10 @@ public class FirmService {
     @Transactional(rollbackFor = Exception.class)
     public Long createFirm(CreateFirmRequest createRequest) {
         User user = userService.createUser(
-            UserRole.Student, 
             createRequest.getEmail(), 
             createRequest.getPassword());
 
         Firm firm = new Firm(
-            user.getUserId(),
             user,
             createRequest.getRegisterDate(),
             createRequest.getFirmName(),
@@ -38,7 +35,7 @@ public class FirmService {
             createRequest.getPhoneNumber(),
             createRequest.getAddress());
 
-        return firmRepository.save(firm).getUser().getUserId();
+        return firmRepository.save(firm).getUser().getId();
     }
 
     public Firm getFirm(Long userId) {
@@ -70,7 +67,7 @@ public class FirmService {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userService.getUserByEmail(currentEmail);
 
-        if (!currentUser.getUserId().equals(userToBeAccessed)) {
+        if (!currentUser.getId().equals(userToBeAccessed)) {
             throw new BusinessException(BusinessExceptionType.Forbidden, "A firm can only read its own account information");
         }
     }

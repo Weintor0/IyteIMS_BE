@@ -10,6 +10,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 
 import lombok.AllArgsConstructor;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @AllArgsConstructor
@@ -22,6 +25,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeRequests(requests -> requests
                         .requestMatchers("/h2/**").permitAll()
+                        .requestMatchers("/", "/v2/api-docs/**", "/swagger.json", "/swagger-resources/**", "/swagger-ui.html", "/webjars/**", "/csrf").permitAll()
+                        .requestMatchers("/api-docs/**", "/api/swagger**", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.POST, SecurityConstants.LOGIN_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, SecurityConstants.REGISTER_PATH + "/**").permitAll()
                         .anyRequest().authenticated())
@@ -29,4 +34,17 @@ public class SecurityConfig {
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }
+
+    // TODO: Not necessary for swagger to work and causes problem with register and login. Figure out why and correct, or just remove.
+    /*@Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration corsConfiguration = new CorsConfiguration().applyPermitDefaultValues();
+        corsConfiguration.addAllowedMethod("GET");
+        corsConfiguration.addAllowedMethod("PUT");
+        corsConfiguration.addAllowedMethod("DELETE");
+        corsConfiguration.addAllowedMethod("PATCH");
+        source.registerCorsConfiguration("/**", corsConfiguration);
+        return source;
+    }*/
 }
