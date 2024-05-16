@@ -24,15 +24,6 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/")
 public class FirmController {
     private FirmService firmService;
-    private AuthenticationService authenticationService;
-
-    @PostMapping("/register/firm")
-    public ResponseEntity<String> createFirm(@Valid @RequestBody CreateFirmRequest createFirmRequest) {
-        firmService.createFirm(createFirmRequest);
-        ResponseEntity<String> response = authenticationService.login(
-                new LoginRequest(createFirmRequest.getEmail(), createFirmRequest.getPassword()));
-        return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
-    }
 
     @PutMapping("/update-firm-account/{userId}")
     public ResponseEntity<Firm> updateFirm(@PathVariable("userId") String userId, @Valid @RequestBody UpdateFirmRequest updateRequest) {

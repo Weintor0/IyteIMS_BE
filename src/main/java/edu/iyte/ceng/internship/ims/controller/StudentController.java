@@ -24,15 +24,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @RequestMapping("/")
 public class StudentController {
     private StudentService studentService;
-    private AuthenticationService authenticationService;
-
-    @PostMapping("/register/student")
-    public ResponseEntity<String> createStudent(@Valid @RequestBody CreateStudentRequest createRequest) {
-        studentService.createStudent(createRequest);
-        ResponseEntity<String> response = authenticationService.login(
-                new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));
-        return new ResponseEntity<>(response.getBody(), response.getHeaders(), HttpStatus.CREATED);
-    }
 
     @PutMapping("/update-student-account/{userId}")
     public ResponseEntity<Student> updateStudent(@PathVariable("userId") String userId, @Valid @RequestBody UpdateStudentRequest updateStudent) {
