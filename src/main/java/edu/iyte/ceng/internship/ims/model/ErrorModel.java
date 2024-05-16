@@ -1,4 +1,4 @@
-package edu.iyte.ceng.internship.ims.exception;
+package edu.iyte.ceng.internship.ims.model;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,11 +9,11 @@ import lombok.Data;
 import lombok.Getter;
 
 @Data
-public class ErrorResponse {
+public class ErrorModel {
     private final LocalDateTime timestamp;
     private final List<Error> errors;
 
-    public ErrorResponse(List<Error> errors) {
+    public ErrorModel(List<Error> errors) {
         this.timestamp = LocalDateTime.now();
         this.errors = errors;
     }

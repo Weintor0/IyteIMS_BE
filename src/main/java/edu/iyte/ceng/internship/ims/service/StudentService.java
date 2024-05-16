@@ -1,6 +1,5 @@
 package edu.iyte.ceng.internship.ims.service;
 
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,7 +7,7 @@ import edu.iyte.ceng.internship.ims.entity.Student;
 import edu.iyte.ceng.internship.ims.entity.User;
 //import edu.iyte.ceng.internship.ims.entity.UserRole; // TODO
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
+import edu.iyte.ceng.internship.ims.exception.ErrorCode;
 import edu.iyte.ceng.internship.ims.model.request.CreateStudentRequest;
 import edu.iyte.ceng.internship.ims.model.request.UpdateStudentRequest;
 import edu.iyte.ceng.internship.ims.repository.StudentRepository;
@@ -38,7 +37,7 @@ public class StudentService {
 
     public Student getStudent(Long userId) {
         Student student = studentRepository.findStudentById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, 
+            () -> new BusinessException(ErrorCode.AccountMissing,
             "Student with User ID " + userId + " does not exist")
         );
 

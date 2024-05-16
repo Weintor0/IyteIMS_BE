@@ -7,7 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import edu.iyte.ceng.internship.ims.entity.Firm;
 import edu.iyte.ceng.internship.ims.entity.User;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
+import edu.iyte.ceng.internship.ims.exception.ErrorCode;
 import edu.iyte.ceng.internship.ims.model.request.CreateFirmRequest;
 import edu.iyte.ceng.internship.ims.model.request.UpdateFirmRequest;
 import edu.iyte.ceng.internship.ims.repository.FirmRepository;
@@ -40,7 +40,7 @@ public class FirmService {
 
     public Firm getFirm(Long userId) {
         Firm firm = firmRepository.findFirmById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, 
+            () -> new BusinessException(ErrorCode.AccountMissing,
             "Firm with User ID " + userId + " does not exist")
         );
 
@@ -51,7 +51,7 @@ public class FirmService {
     @Transactional(rollbackFor = Exception.class)
     public Firm updateFirm(Long userId, UpdateFirmRequest updateRequest) {
         Firm firm = firmRepository.findFirmById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, "Firm with user ID " + userId + " does not exist.")
+            () -> new BusinessException(ErrorCode.AccountMissing, "Firm with user ID " + userId + " does not exist.")
         );
 
         userService.updateUser(userId, updateRequest.getEmail(), updateRequest.getPassword());
@@ -68,7 +68,7 @@ public class FirmService {
         User currentUser = userService.getUserByEmail(currentEmail);
 
         if (!currentUser.getId().equals(userToBeAccessed)) {
-            throw new BusinessException(BusinessExceptionType.Forbidden, "A firm can only read its own account information");
+            throw new BusinessException(ErrorCode.Forbidden, "A firm can only read its own account information");
         }
     }
 }

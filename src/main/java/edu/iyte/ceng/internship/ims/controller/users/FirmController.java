@@ -1,4 +1,4 @@
-package edu.iyte.ceng.internship.ims.controller;
+package edu.iyte.ceng.internship.ims.controller.users;
 
 import edu.iyte.ceng.internship.ims.model.request.LoginRequest;
 import edu.iyte.ceng.internship.ims.service.AuthenticationService;

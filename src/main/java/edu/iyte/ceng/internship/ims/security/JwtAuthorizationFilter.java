@@ -12,7 +12,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import edu.iyte.ceng.internship.ims.exception.ErrorResponse;
+import edu.iyte.ceng.internship.ims.model.ErrorModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.core.Authentication;
@@ -25,7 +25,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class AuthorizationFilter extends OncePerRequestFilter {
+public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
@@ -47,8 +47,8 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContext().setAuthentication(authentication);
             filterChain.doFilter(request, response);
         } catch (JWTVerificationException e) {
-            ErrorResponse errorResponse = new ErrorResponse(List.of(
-                    ErrorResponse.Error.builder()
+            ErrorModel errorModel = new ErrorModel(List.of(
+                    ErrorModel.Error.builder()
                         .entity(null)
                         .attribute(null)
                         .constraint("InvalidToken")
@@ -59,7 +59,7 @@ public class AuthorizationFilter extends OncePerRequestFilter {
             mapper.registerModule(new JavaTimeModule());
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             ObjectWriter objectWriter = mapper.writer().withDefaultPrettyPrinter();
-            String errorResponseJson = objectWriter.writeValueAsString(errorResponse);
+            String errorResponseJson = objectWriter.writeValueAsString(errorModel);
 
             response.setStatus(HttpStatus.FORBIDDEN.value());
             response.setHeader("Content-Type", "application/json");

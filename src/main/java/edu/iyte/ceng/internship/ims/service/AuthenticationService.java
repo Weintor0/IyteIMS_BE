@@ -3,7 +3,7 @@ package edu.iyte.ceng.internship.ims.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
+import edu.iyte.ceng.internship.ims.exception.ErrorCode;
 import edu.iyte.ceng.internship.ims.model.request.LoginRequest;
 import edu.iyte.ceng.internship.ims.entity.User;
 
@@ -31,7 +31,7 @@ public class AuthenticationService {
     public ResponseEntity<String> login(LoginRequest loginRequest) {
         User user = userService.getUserByEmail(loginRequest.getEmail());
         if (!bCryptPasswordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            throw new BusinessException(BusinessExceptionType.PasswordMismatch, "Incorrect password");
+            throw new BusinessException(ErrorCode.PasswordMismatch, "Incorrect password");
         }
 
         Authentication authentication = new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), user.getPassword());

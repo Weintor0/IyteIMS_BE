@@ -10,13 +10,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 
 import lombok.AllArgsConstructor;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @AllArgsConstructor
-public class SecurityConfig {
+public class SecurityConfiguration {
     @SuppressWarnings({ "deprecation", "removal" })
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -29,7 +26,7 @@ public class SecurityConfig {
                         .requestMatchers("/api-docs/**", "/api/swagger**", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/**").permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(new AuthorizationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new JwtAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(management -> management.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         return http.build();
     }

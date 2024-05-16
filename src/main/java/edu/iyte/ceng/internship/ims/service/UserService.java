@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import edu.iyte.ceng.internship.ims.entity.User;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
+import edu.iyte.ceng.internship.ims.exception.ErrorCode;
 import edu.iyte.ceng.internship.ims.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
@@ -26,24 +26,24 @@ public class UserService {
 
     public User getUserById(Long userId) {
         User user = userRepository.findById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, userId.toString()));
+            () -> new BusinessException(ErrorCode.AccountMissing, userId.toString()));
         return user;
     }
 
     public User getUserByEmail(String email) {
         User user = userRepository.findUserByEmail(email).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, email)
+            () -> new BusinessException(ErrorCode.AccountMissing, email)
         );
         return user;
     }
 
     public User updateUser(Long userId, String email, String password) {
         User user = userRepository.findById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, userId.toString()));
+            () -> new BusinessException(ErrorCode.AccountMissing, userId.toString()));
 
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         if (!currentEmail.equals(user.getEmail())) {
-            throw new BusinessException(BusinessExceptionType.Unauthorized, "Users can only update their own accounts.");
+            throw new BusinessException(ErrorCode.Unauthorized, "Users can only update their own accounts.");
         }
 
         String newEmail = email != null ? email : user.getEmail();
