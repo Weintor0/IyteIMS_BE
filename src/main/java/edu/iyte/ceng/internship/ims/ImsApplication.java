@@ -11,9 +11,4 @@ public class ImsApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ImsApplication.class, args);
 	}
-
-	@Bean
-	public BCryptPasswordEncoder bCryptPasswordEncoder() {
-		return new BCryptPasswordEncoder();
-	}	
 }
