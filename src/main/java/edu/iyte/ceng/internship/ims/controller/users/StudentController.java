@@ -27,13 +27,13 @@ public class StudentController {
 
     @PutMapping("/update-student-account/{userId}")
     public ResponseEntity<Student> updateStudent(@PathVariable("userId") String userId, @Valid @RequestBody UpdateStudentRequest updateStudent) {
-        Student student = studentService.updateStudent(Long.parseLong(userId), updateStudent);
+        Student student = studentService.updateStudent(userId, updateStudent);
         return new ResponseEntity<>(student, HttpStatus.OK);
     }
 
     @GetMapping("/get-student-account/{userId}")
     public ResponseEntity<Student> getStudent(@PathVariable("userId") String userId) {
-        Student student = studentService.getStudent(Long.parseLong(userId));
+        Student student = studentService.getStudent(userId);
         return new ResponseEntity<>(student, HttpStatus.OK);
     }
     

@@ -24,7 +24,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User getUserById(Long userId) {
+    public User getUserById(String userId) {
         User user = userRepository.findById(userId).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing, userId.toString()));
         return user;
@@ -37,7 +37,7 @@ public class UserService {
         return user;
     }
 
-    public User updateUser(Long userId, String email, String password) {
+    public User updateUser(String userId, String email, String password) {
         User user = userRepository.findById(userId).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing, userId.toString()));
 

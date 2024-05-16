@@ -20,22 +20,24 @@ public class StudentService {
     private UserService userService;
 
     @Transactional(rollbackFor = Exception.class)
-    public Long createStudent(CreateStudentRequest createRequest) {
+    public String createStudent(CreateStudentRequest createRequest) {
         User user = userService.createUser(
             createRequest.getEmail(), 
             createRequest.getPassword());
 
-        Student student = new Student(
-            user,
-            createRequest.getStudentNumber(),
-            createRequest.getBirthDate(),
-            createRequest.getName(),
-            createRequest.getSurname());
+        Student student = Student.builder()
+                //.id(user.getId())
+                .user(user)
+                .studentNumber(createRequest.getStudentNumber())
+                .name(createRequest.getName())
+                .surname(createRequest.getSurname())
+                .birthDate(createRequest.getBirthDate())
+                .build();
 
         return studentRepository.save(student).getUser().getId();
     }
 
-    public Student getStudent(Long userId) {
+    public Student getStudent(String userId) {
         Student student = studentRepository.findStudentById(userId).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing,
             "Student with User ID " + userId + " does not exist")
@@ -45,7 +47,7 @@ public class StudentService {
         return student;
     }
 
-    public Student updateStudent(Long userId, UpdateStudentRequest updateRequest) {
+    public Student updateStudent(String userId, UpdateStudentRequest updateRequest) {
         userService.updateUser(
             userId, 
             updateRequest.getEmail(), 
@@ -57,7 +59,7 @@ public class StudentService {
         );
     }
 
-    private void ensureReadPrivilege(Long userId) {
+    private void ensureReadPrivilege(String userId) {
         // TODO: User role olmadığında student ve firm tablolarını tek tek aramadan currentUser'ın tipinin ne olduğunu nasıl bileceğiz?
 
         /*

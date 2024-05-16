@@ -6,10 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import edu.iyte.ceng.internship.ims.entity.Firm;
 
-public interface FirmRepository extends JpaRepository<Firm, Long> {
+public interface FirmRepository extends JpaRepository<Firm, String> {
     Optional<Firm> findFirmByFirmName(String name);
 
     Optional<Firm> findFirmByBusinessRegistrationNumber(String registrationNumber);
 
-    Optional<Firm> findFirmById(Long userId);
+    Optional<Firm> findFirmById(String userId);
 }

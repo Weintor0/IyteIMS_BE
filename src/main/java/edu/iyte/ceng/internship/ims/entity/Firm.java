@@ -4,21 +4,17 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @Entity
+@Builder
+//@SuperBuilder
 @Table(name = "firm", uniqueConstraints = {
     @UniqueConstraint(name = "UC_FIRM_NAME", columnNames = { "firm_name" }),
     @UniqueConstraint(name = "UC_BUSINESS_REGISTRATION_NUMBER", columnNames = { "business_registration_number" })
@@ -29,9 +25,8 @@ import lombok.*;
 public class Firm extends BaseEntity {
     public static final String entityName = "Firm";
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @PrimaryKeyJoinColumn(name = "user_id", referencedColumnName = "user_id")
-    @NotNull
+    @OneToOne(cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
 
     @NotNull

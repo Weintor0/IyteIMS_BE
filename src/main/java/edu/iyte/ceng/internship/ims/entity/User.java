@@ -13,17 +13,18 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.NonNull;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
 @Entity
+//@SuperBuilder
+@Builder
 @Table(name = "users", uniqueConstraints = {
     @UniqueConstraint(name = "UC_EMAIL", columnNames = {"email"})
 })
+@AllArgsConstructor
 @NoArgsConstructor
 @AssociatedWithEntity(entityName = User.entityName)
 public class User extends BaseEntity {

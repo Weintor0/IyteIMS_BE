@@ -20,25 +20,27 @@ public class FirmService {
     private UserService userService;
 
     @Transactional(rollbackFor = Exception.class)
-    public Long createFirm(CreateFirmRequest createRequest) {
+    public String createFirm(CreateFirmRequest createRequest) {
         User user = userService.createUser(
             createRequest.getEmail(), 
             createRequest.getPassword());
 
-        Firm firm = new Firm(
-            user,
-            createRequest.getRegisterDate(),
-            createRequest.getFirmName(),
-            createRequest.getTypeOfBusiness(),
-            createRequest.getBusinessRegistrationNumber(),
-            createRequest.getLegalStructure(),
-            createRequest.getPhoneNumber(),
-            createRequest.getAddress());
+        Firm firm = Firm.builder()
+                //.id(user.getId())
+                .user(user)
+                .registerDate(createRequest.getRegisterDate())
+                .firmName(createRequest.getFirmName())
+                .typeOfBusiness(createRequest.getTypeOfBusiness())
+                .businessRegistrationNumber(createRequest.getBusinessRegistrationNumber())
+                .legalStructure(createRequest.getLegalStructure())
+                .phoneNumber(createRequest.getPhoneNumber())
+                .address(createRequest.getAddress())
+                .build();
 
         return firmRepository.save(firm).getUser().getId();
     }
 
-    public Firm getFirm(Long userId) {
+    public Firm getFirm(String userId) {
         Firm firm = firmRepository.findFirmById(userId).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing,
             "Firm with User ID " + userId + " does not exist")
@@ -49,7 +51,7 @@ public class FirmService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public Firm updateFirm(Long userId, UpdateFirmRequest updateRequest) {
+    public Firm updateFirm(String userId, UpdateFirmRequest updateRequest) {
         Firm firm = firmRepository.findFirmById(userId).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing, "Firm with user ID " + userId + " does not exist.")
         );
@@ -63,7 +65,7 @@ public class FirmService {
         return firmRepository.save(firm);
     }
 
-    public void ensureReadPrivilege(Long userToBeAccessed) {
+    public void ensureReadPrivilege(String userToBeAccessed) {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User currentUser = userService.getUserByEmail(currentEmail);
 

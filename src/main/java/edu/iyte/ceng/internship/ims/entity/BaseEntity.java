@@ -1,34 +1,27 @@
 package edu.iyte.ceng.internship.ims.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.Objects;
 
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
+@AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 public class BaseEntity {
-    // TODO: This is temporarily commented because H2 does not work with String IDs.
-    // TODO: Will replace the "private Long id;" field after switching to PostgreSQL.
-    /*
-        @Id
-        @GenericGenerator(name = "uuid2", strategy = "uuid2")
-        @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "uuid2")
-        @Column(length = 36, nullable = false, updatable = false)
-        @Setter(AccessLevel.NONE)
-        private String id;
-    */
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "uuid2")
+    @Column(length = 36, nullable = false, updatable = false)
+    @Setter(AccessLevel.NONE)
+    private String id;
 
     @Override
     public boolean equals(Object o) {

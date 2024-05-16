@@ -50,7 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             // Check if the user who received this token deleted his/her account, even though the token can still be verified.
-            if (userRepository.findById(Long.parseLong(authentication.getName())).isEmpty()) {
+            if (userRepository.findById(authentication.getName()).isEmpty()) {
                 returnInvalidTokenResponse(response);
                 return;
             }

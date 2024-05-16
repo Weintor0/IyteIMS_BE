@@ -27,13 +27,13 @@ public class FirmController {
 
     @PutMapping("/update-firm-account/{userId}")
     public ResponseEntity<Firm> updateFirm(@PathVariable("userId") String userId, @Valid @RequestBody UpdateFirmRequest updateRequest) {
-        Firm firm = firmService.updateFirm(Long.parseLong(userId), updateRequest);
+        Firm firm = firmService.updateFirm(userId, updateRequest);
         return new ResponseEntity<>(firm, HttpStatus.OK);
     }
 
     @GetMapping("/get-firm-account/{userId}")
     public ResponseEntity<Firm> getFirm(@PathVariable("userId") String userId) {
-        Firm firm = firmService.getFirm(Long.parseLong(userId));
+        Firm firm = firmService.getFirm(userId);
         return new ResponseEntity<>(firm, HttpStatus.OK);
     }
 }
