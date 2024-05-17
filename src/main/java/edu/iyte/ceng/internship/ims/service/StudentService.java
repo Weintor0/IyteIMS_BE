@@ -1,5 +1,6 @@
 package edu.iyte.ceng.internship.ims.service;
 
+import edu.iyte.ceng.internship.ims.model.response.users.StudentResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -8,9 +9,10 @@ import edu.iyte.ceng.internship.ims.entity.User;
 //import edu.iyte.ceng.internship.ims.entity.UserRole; // TODO
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.ErrorCode;
-import edu.iyte.ceng.internship.ims.model.request.CreateStudentRequest;
-import edu.iyte.ceng.internship.ims.model.request.UpdateStudentRequest;
+import edu.iyte.ceng.internship.ims.model.request.users.StudentRegisterRequest;
+import edu.iyte.ceng.internship.ims.model.request.users.UpdateStudentRequest;
 import edu.iyte.ceng.internship.ims.repository.StudentRepository;
+import edu.iyte.ceng.internship.ims.service.mapper.StudentMapper;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -18,45 +20,41 @@ import lombok.AllArgsConstructor;
 public class StudentService {
     private StudentRepository studentRepository;
     private UserService userService;
+    private StudentMapper studentMapper;
 
     @Transactional(rollbackFor = Exception.class)
-    public String createStudent(CreateStudentRequest createRequest) {
+    public StudentResponse createStudent(StudentRegisterRequest createRequest) {
         User user = userService.createUser(
             createRequest.getEmail(), 
             createRequest.getPassword());
 
-        Student student = Student.builder()
-                //.id(user.getId())
-                .user(user)
-                .studentNumber(createRequest.getStudentNumber())
-                .name(createRequest.getName())
-                .surname(createRequest.getSurname())
-                .birthDate(createRequest.getBirthDate())
-                .build();
-
-        return studentRepository.save(student).getUser().getId();
+        Student student = studentMapper.fromRequest(createRequest, user);
+        Student savedStudent = studentRepository.save(student);
+        return studentMapper.fromEntity(savedStudent);
     }
 
-    public Student getStudent(String userId) {
-        Student student = studentRepository.findStudentById(userId).orElseThrow(
+    public StudentResponse getStudent(String userId) {
+        User user = userService.getUserById(userId);
+        Student student = studentRepository.findStudentByUser(user).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing,
             "Student with User ID " + userId + " does not exist")
         );
 
         ensureReadPrivilege(userId);
-        return student;
+        return studentMapper.fromEntity(student);
     }
 
-    public Student updateStudent(String userId, UpdateStudentRequest updateRequest) {
+    public StudentResponse updateStudent(String userId, UpdateStudentRequest updateRequest) {
         userService.updateUser(
             userId, 
             updateRequest.getEmail(), 
             updateRequest.getPassword()
         );
 
-        return studentRepository.findById(userId).orElseThrow(
+        Student updatedStudent = studentRepository.findById(userId).orElseThrow(
                 () -> new IllegalStateException("User disappeared within a single transaction.")
         );
+        return studentMapper.fromEntity(updatedStudent);
     }
 
     private void ensureReadPrivilege(String userId) {
@@ -64,8 +62,8 @@ public class StudentService {
 
         /*
 
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userService.getUserByEmail(currentEmail);
+        String currentId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userService.getUserByEmail(currentId);
 
         switch (currentUser.getUserRole()) {
             case Student:

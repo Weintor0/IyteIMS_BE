@@ -1,4 +1,4 @@
-package edu.iyte.ceng.internship.ims.model.request;
+package edu.iyte.ceng.internship.ims.model.request.users;
 
 import java.util.Date;
 
@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @AssociatedWithEntity(entityName = Student.entityName)
-public class CreateStudentRequest {
+public class StudentRegisterRequest {
     @NotBlank(message = "Student number cannot be blank.")
     private String studentNumber;
 

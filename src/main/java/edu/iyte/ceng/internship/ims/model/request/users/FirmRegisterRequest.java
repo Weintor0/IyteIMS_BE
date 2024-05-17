@@ -1,4 +1,4 @@
-package edu.iyte.ceng.internship.ims.model.request;
+package edu.iyte.ceng.internship.ims.model.request.users;
 
 import java.util.Date;
 
@@ -14,7 +14,7 @@ import lombok.Data;
 
 @Data
 @AssociatedWithEntity(entityName = Firm.entityName)
-public class CreateFirmRequest {
+public class FirmRegisterRequest {
     @JsonFormat(pattern = "dd.MM.yyyy")
     @NotNull(message = "Register date cannot be empty.")
     private Date registerDate;

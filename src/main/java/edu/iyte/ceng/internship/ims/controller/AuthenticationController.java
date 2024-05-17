@@ -1,7 +1,7 @@
 package edu.iyte.ceng.internship.ims.controller;
 
-import edu.iyte.ceng.internship.ims.model.request.CreateFirmRequest;
-import edu.iyte.ceng.internship.ims.model.request.CreateStudentRequest;
+import edu.iyte.ceng.internship.ims.model.request.users.FirmRegisterRequest;
+import edu.iyte.ceng.internship.ims.model.request.users.StudentRegisterRequest;
 import edu.iyte.ceng.internship.ims.model.request.LoginRequest;
 import edu.iyte.ceng.internship.ims.model.response.LoginResponse;
 import edu.iyte.ceng.internship.ims.service.AuthenticationService;
@@ -9,8 +9,6 @@ import edu.iyte.ceng.internship.ims.service.FirmService;
 import edu.iyte.ceng.internship.ims.service.StudentService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import lombok.extern.java.Log;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,17 +34,17 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/firm")
-    public ResponseEntity<LoginResponse> createFirm(@Valid @RequestBody CreateFirmRequest createFirmRequest) {
-        firmService.createFirm(createFirmRequest);
+    public ResponseEntity<LoginResponse> createFirm(@Valid @RequestBody FirmRegisterRequest firmRegisterRequest) {
+        firmService.createFirm(firmRegisterRequest);
         LoginResponse loginResponse = authenticationService.login(
-                new LoginRequest(createFirmRequest.getEmail(), createFirmRequest.getPassword()));
+                new LoginRequest(firmRegisterRequest.getEmail(), firmRegisterRequest.getPassword()));
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", loginResponse.getToken());
         return new ResponseEntity<>(loginResponse, headers, HttpStatus.CREATED);
     }
 
     @PostMapping("/register/student")
-    public ResponseEntity<LoginResponse> createStudent(@Valid @RequestBody CreateStudentRequest createRequest) {
+    public ResponseEntity<LoginResponse> createStudent(@Valid @RequestBody StudentRegisterRequest createRequest) {
         studentService.createStudent(createRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));

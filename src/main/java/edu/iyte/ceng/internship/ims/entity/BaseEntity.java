@@ -28,6 +28,8 @@ public class BaseEntity {
         if (o == null) return false;
         if (this == o) return true;
 
+        java.util.List<Object> obj;
+
         if (!Objects.equals(getClass(), o.getClass())) {
             return false;
         }

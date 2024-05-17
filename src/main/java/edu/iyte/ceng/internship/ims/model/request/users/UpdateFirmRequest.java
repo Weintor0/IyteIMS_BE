@@ -1,4 +1,4 @@
-package edu.iyte.ceng.internship.ims.model.request;
+package edu.iyte.ceng.internship.ims.model.request.users;
 
 import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
 import edu.iyte.ceng.internship.ims.entity.Firm;
