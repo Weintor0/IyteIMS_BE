@@ -8,6 +8,7 @@ import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
 import edu.iyte.ceng.internship.ims.entity.Student;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -17,6 +18,7 @@ public class StudentRegisterRequest {
     private String studentNumber;
 
     @JsonFormat(pattern = "dd.MM.yyyy")
+    @NotNull(message = "Birth date cannot be empty.")
     private Date birthDate;
 
     @NotBlank(message = "Name cannot be blank.")
@@ -25,8 +27,8 @@ public class StudentRegisterRequest {
     @NotBlank(message = "Surname cannot be blank.")
     private String surname;
 
-    @NotBlank(message = "Email cannot be blank")
-    @Email
+    @NotBlank(message = "Email cannot be blank.")
+    @Email(message = "Email must be well-formed.")
     private String email;
 
     @NotBlank(message = "Password cannot be blank")

@@ -8,7 +8,6 @@ import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
 import edu.iyte.ceng.internship.ims.entity.Firm;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -19,26 +18,26 @@ public class FirmRegisterRequest {
     @NotNull(message = "Register date cannot be empty.")
     private Date registerDate;
 
-    @NotEmpty(message = "Firm name cannot be empty.")
+    @NotBlank(message = "Firm name cannot be empty.")
     private String firmName;
 
-    @NotEmpty(message = "Type of business cannot be empty.")
+    @NotBlank(message = "Type of business cannot be empty.")
     private String typeOfBusiness;
 
-    @NotEmpty(message = "Business registration number cannot be empty.")
+    @NotBlank(message = "Business registration number cannot be empty.")
     private String businessRegistrationNumber;
 
-    @NotEmpty(message = "Legal structure cannot be empty.")
+    @NotBlank(message = "Legal structure cannot be empty.")
     private String legalStructure;
 
-    @NotEmpty(message = "Phone number cannot be empty.")
+    @NotBlank(message = "Phone number cannot be empty.")
     private String phoneNumber;
 
-    @NotEmpty(message = "Address cannot be empty.")
+    @NotBlank(message = "Address cannot be empty.")
     private String address;
 
-    @NotEmpty(message = "Email must be well-formed.")
-    @Email
+    @NotBlank(message = "Email cannot be blank.")
+    @Email(message = "Email must be well-formed.")
     private String email;
 
     @NotBlank(message = "Password cannot be blank.")

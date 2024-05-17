@@ -2,6 +2,7 @@ package edu.iyte.ceng.internship.ims.model.request.users;
 
 import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
 import edu.iyte.ceng.internship.ims.entity.Firm;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -18,6 +19,7 @@ public class UpdateFirmRequest {
     private String address;
 
     @NotBlank(message = "Email cannot be blank.")
+    @Email(message = "Email must be well-formed.")
     private String email;
 
     @NotBlank(message = "Password cannot be blank.")

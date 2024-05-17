@@ -9,8 +9,8 @@ import lombok.Data;
 @Data
 @AssociatedWithEntity(entityName = Student.entityName)
 public class UpdateStudentRequest {
+    @NotBlank(message = "Email cannot be empty.")
     @Email(message = "Email must be well-formed.")
-    @NotBlank(message = "Email cannot be blank.")
     private String email;
 
     @NotBlank(message = "Password cannot be blank.")

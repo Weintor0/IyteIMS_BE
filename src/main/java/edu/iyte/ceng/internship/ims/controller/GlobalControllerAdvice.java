@@ -79,9 +79,10 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
             Table tbl = clazz.getAnnotation(Table.class);
             for (UniqueConstraint uniqueConstraint : tbl.uniqueConstraints()) {
                 String constraintName = uniqueConstraint.name();
+
                 // If the exception that was thrown contains the name of the uniqueness constraint in its
                 // message, determine attribute name and add the error to the list.
-                if (ex.getMessage().contains(constraintName)) {
+                if (ex.getMessage().toUpperCase().contains(constraintName.toUpperCase())) {
                     String columnName = uniqueConstraint.columnNames()[0];
                     String attributeName = attributeToColumnMap.get(columnName);
 
