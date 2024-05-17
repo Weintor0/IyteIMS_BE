@@ -16,8 +16,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        #hbm2ddl:
-        #  import_files_sql_extractor: org.hibernate.tool.hbm2ddl.MultipleLinesSqlCommandExtractor
+        hbm2ddl:
+          import_files_sql_extractor: org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor
         dialect: org.hibernate.dialect.PostgreSQLDialect
   servlet:
     multipart:
