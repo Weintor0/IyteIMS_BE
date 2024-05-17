@@ -5,12 +5,13 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import edu.iyte.ceng.internship.ims.config.SecurityConfig;
+import edu.iyte.ceng.internship.ims.entity.UserRole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,8 +36,10 @@ public class JwtServiceAuth0 implements JwtService {
                     .verify(replacedToken);
 
             String subject = decodedToken.getSubject();
-            if (StringUtils.isNotEmpty(subject)) {
-                return new UsernamePasswordAuthenticationToken(subject, null, List.of());
+            String role = decodedToken.getClaim(SecurityConstants.CLAIM_ROLE).asString();
+
+            if (StringUtils.isNotEmpty(subject) && StringUtils.isNotEmpty(role)) {
+                return new UsernamePasswordAuthenticationToken(subject, null, List.of(new SimpleGrantedAuthority(role)));
             }
         } catch (JWTVerificationException exception) {
             logger.warn("JWT verification failed : {} : {}", token, exception.getMessage());
@@ -45,10 +48,11 @@ public class JwtServiceAuth0 implements JwtService {
         return null;
     }
 
-    public String createToken(String subject) {
+    public String createToken(String subject, UserRole userRole) {
         String token = JWT.create()
                 .withSubject(subject)
                 .withExpiresAt(new Date(System.currentTimeMillis() + SecurityConstants.TOKEN_EXPIRATION))
+                .withClaim(SecurityConstants.CLAIM_ROLE, userRole.getRoleName())
                 .sign(Algorithm.HMAC512(securityConfig.getJwtSecret()));
 
         return SecurityConstants.TOKEN_PREFIX + token;

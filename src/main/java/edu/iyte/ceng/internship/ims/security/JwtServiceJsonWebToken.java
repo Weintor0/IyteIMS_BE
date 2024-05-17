@@ -1,5 +1,6 @@
 package edu.iyte.ceng.internship.ims.security;
 
+import edu.iyte.ceng.internship.ims.entity.UserRole;
 import io.jsonwebtoken.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -8,9 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import edu.iyte.ceng.internship.ims.config.SecurityConfig;
 
@@ -39,9 +43,12 @@ public class JwtServiceJsonWebToken implements JwtService {
                 String subject = parsedToken
                         .getBody()
                         .getSubject();
+                String role = parsedToken
+                        .getBody()
+                        .get(SecurityConstants.CLAIM_ROLE, String.class);
 
-                if (StringUtils.isNotEmpty(subject)) {
-                    return new UsernamePasswordAuthenticationToken(subject, null, null);
+                if (StringUtils.isNotEmpty(subject) && StringUtils.isNotEmpty(role)) {
+                    return new UsernamePasswordAuthenticationToken(subject, null, List.of(new SimpleGrantedAuthority(role)));
                 }
             } catch (ExpiredJwtException exception) {
                 logger.warn("Request to parse expired JWT : {} failed : {}", token, exception.getMessage());
@@ -58,7 +65,7 @@ public class JwtServiceJsonWebToken implements JwtService {
         return null;
     }
 
-    public String createToken(String subject) {
+    public String createToken(String subject, UserRole userRole) {
         byte[] signingKey = securityConfig.getJwtSecret().getBytes();
         return SecurityConstants.TOKEN_PREFIX + Jwts.builder()
                 .signWith(SignatureAlgorithm.HS512, signingKey)
@@ -66,6 +73,7 @@ public class JwtServiceJsonWebToken implements JwtService {
                 .setIssuer(SecurityConstants.TOKEN_ISSUER)
                 .setAudience(SecurityConstants.TOKEN_AUDIENCE)
                 .setSubject(subject)
+                .addClaims(Map.of(SecurityConstants.CLAIM_ROLE, userRole.getRoleName()))
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.TOKEN_EXPIRATION))
                 .compact();

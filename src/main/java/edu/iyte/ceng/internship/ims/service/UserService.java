@@ -1,5 +1,6 @@
 package edu.iyte.ceng.internship.ims.service;
 
+import edu.iyte.ceng.internship.ims.entity.UserRole;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,29 +18,28 @@ public class UserService {
     private UserRepository userRepository;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public User createUser(String email, String password) {
+    public User createUser(String email, String password, UserRole role) {
         User user = new User();
         user.setEmail(email);
         user.setPassword(bCryptPasswordEncoder.encode(password));
+        user.setUserRole(role);
         return userRepository.save(user);
     }
 
     public User getUserById(String userId) {
-        User user = userRepository.findById(userId).orElseThrow(
-            () -> new BusinessException(ErrorCode.AccountMissing, userId.toString()));
-        return user;
+        return userRepository.findById(userId).orElseThrow(
+            () -> new BusinessException(ErrorCode.AccountMissing, userId));
     }
 
     public User getUserByEmail(String email) {
-        User user = userRepository.findUserByEmail(email).orElseThrow(
+        return userRepository.findUserByEmail(email).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing, email)
         );
-        return user;
     }
 
     public User updateUser(String userId, String email, String password) {
         User user = userRepository.findById(userId).orElseThrow(
-            () -> new BusinessException(ErrorCode.AccountMissing, userId.toString()));
+            () -> new BusinessException(ErrorCode.AccountMissing, userId));
 
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         if (!currentEmail.equals(user.getEmail())) {

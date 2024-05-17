@@ -1,8 +1,8 @@
 package edu.iyte.ceng.internship.ims.service;
 
+import edu.iyte.ceng.internship.ims.entity.UserRole;
 import edu.iyte.ceng.internship.ims.model.response.users.FirmResponse;
 import edu.iyte.ceng.internship.ims.service.mapper.FirmMapper;
-import edu.iyte.ceng.internship.ims.service.mapper.UserMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,9 @@ public class FirmService {
     public FirmResponse createFirm(FirmRegisterRequest createRequest) {
         User user = userService.createUser(
             createRequest.getEmail(), 
-            createRequest.getPassword());
+            createRequest.getPassword(),
+            UserRole.Firm);
+
         Firm firm = firmMapper.fromRequest(createRequest, user);
         Firm createdFirm = firmRepository.save(firm);
         return firmMapper.fromEntity(createdFirm);

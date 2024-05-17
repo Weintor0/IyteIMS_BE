@@ -1,11 +1,6 @@
 package edu.iyte.ceng.internship.ims.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
@@ -27,6 +22,9 @@ public class User extends BaseEntity {
     private String email;
 
     @Column(name = "password", nullable = false)
-    @JsonIgnore
     private String password;
+
+    @Column(name = "user_role", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private UserRole userRole;
 }

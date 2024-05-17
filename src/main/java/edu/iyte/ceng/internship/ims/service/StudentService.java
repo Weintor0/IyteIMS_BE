@@ -1,6 +1,8 @@
 package edu.iyte.ceng.internship.ims.service;
 
+import edu.iyte.ceng.internship.ims.entity.UserRole;
 import edu.iyte.ceng.internship.ims.model.response.users.StudentResponse;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +28,8 @@ public class StudentService {
     public StudentResponse createStudent(StudentRegisterRequest createRequest) {
         User user = userService.createUser(
             createRequest.getEmail(), 
-            createRequest.getPassword());
+            createRequest.getPassword(),
+            UserRole.Student);
 
         Student student = studentMapper.fromRequest(createRequest, user);
         Student savedStudent = studentRepository.save(student);
@@ -59,28 +62,22 @@ public class StudentService {
     }
 
     private void ensureReadPrivilege(String userId) {
-        // TODO: User role olmadığında student ve firm tablolarını tek tek aramadan currentUser'ın tipinin ne olduğunu nasıl bileceğiz?
-
-        /*
-
         String currentId = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userService.getUserByEmail(currentId);
+        User currentUser = userService.getUserById(currentId);
 
         switch (currentUser.getUserRole()) {
             case Student:
                 if (!currentUser.getId().equals(userId)) {
-                    throw new BusinessException(BusinessExceptionType.Forbidden, 
+                    throw new BusinessException(ErrorCode.Forbidden,
                     "Students can only access their own profile information.");
                 }
                 break;
             case Firm:
-                // TODO
-                throw new BusinessException(BusinessExceptionType.Forbidden, 
+                // TODO: The required logic will be added after implementing internship.
+                throw new BusinessException(ErrorCode.Forbidden,
                 "Firms can only access the information of students working within their company.");
             default:
                 break;
         }
-
-        */
     }
 }
