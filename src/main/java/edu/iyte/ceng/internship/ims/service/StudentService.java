@@ -44,6 +44,7 @@ public class StudentService {
         return studentMapper.fromEntity(student);
     }
 
+    @Transactional(rollbackFor = Exception.class)
     public StudentResponse updateStudent(String userId, UpdateStudentRequest updateRequest) {
         userService.updateUser(
             userId, 

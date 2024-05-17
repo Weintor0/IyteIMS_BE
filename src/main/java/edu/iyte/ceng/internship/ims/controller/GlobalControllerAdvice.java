@@ -191,4 +191,9 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         ErrorModel response = new ErrorModel(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<HttpStatus> handleIllegalStateException(IllegalStateException exception) {
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }
