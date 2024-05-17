@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Date;
 
 @Service
-@Primary
 public class JwtServiceAuth0 implements JwtService {
     private final SecurityConfig securityConfig;
     private static final Logger logger = LoggerFactory.getLogger(JwtServiceAuth0.class);
