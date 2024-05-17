@@ -18,17 +18,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/")
+@RequestMapping("/student")
 public class StudentController {
     private StudentService studentService;
 
-    @PutMapping("/update-student-account/{userId}")
+    @PutMapping("/update/{userId}")
     public ResponseEntity<StudentResponse> updateStudent(@PathVariable("userId") String userId, @Valid @RequestBody UpdateStudentRequest updateStudent) {
         StudentResponse response = studentService.updateStudent(userId, updateStudent);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/get-student-account/{userId}")
+    @GetMapping("/get/{userId}")
     public ResponseEntity<StudentResponse> getStudent(@PathVariable("userId") String userId) {
         StudentResponse response = studentService.getStudent(userId);
         return new ResponseEntity<>(response, HttpStatus.OK);

@@ -18,17 +18,17 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/")
+@RequestMapping("/firm")
 public class FirmController {
     private FirmService firmService;
 
-    @PutMapping("/update-firm-account/{userId}")
+    @PutMapping("/update/{userId}")
     public ResponseEntity<FirmResponse> updateFirm(@PathVariable("userId") String userId, @Valid @RequestBody UpdateFirmRequest updateRequest) {
         FirmResponse response = firmService.updateFirm(userId, updateRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @GetMapping("/get-firm-account/{userId}")
+    @GetMapping("/get/{userId}")
     public ResponseEntity<FirmResponse> getFirm(@PathVariable("userId") String userId) {
         FirmResponse response = firmService.getFirm(userId);
         return new ResponseEntity<>(response, HttpStatus.OK);
