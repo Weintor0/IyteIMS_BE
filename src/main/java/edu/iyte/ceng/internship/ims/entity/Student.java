@@ -2,14 +2,11 @@ package edu.iyte.ceng.internship.ims.entity;
 
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
@@ -36,7 +33,6 @@ public class Student extends BaseEntity {
     @NotNull
     @Past
     @Column(name = "birth_date")
-    @JsonFormat(pattern = "dd.MM.yyyy")
     private Date birthDate;
 
     @NotNull

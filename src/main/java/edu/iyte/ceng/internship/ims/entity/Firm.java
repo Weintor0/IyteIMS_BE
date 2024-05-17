@@ -2,13 +2,10 @@ package edu.iyte.ceng.internship.ims.entity;
 
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 
 @Getter
 @Setter
@@ -30,7 +27,6 @@ public class Firm extends BaseEntity {
 
     @NotNull
     @Column(name = "register_date")
-    @JsonFormat(pattern = "dd.MM.yyyy")
     private Date registerDate;
 
     @NotNull
