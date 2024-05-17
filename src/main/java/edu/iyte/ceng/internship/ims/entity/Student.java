@@ -15,7 +15,6 @@ import lombok.experimental.SuperBuilder;
 @Setter
 @Entity
 @Builder
-//@SuperBuilder
 @Table(name = "student", uniqueConstraints = {
     @UniqueConstraint(name = "UC_STUDENT_NUMBER", columnNames = {"student_number"})
 })
