@@ -1,4 +1,4 @@
-package edu.iyte.ceng.internship.ims.entity;
+package edu.iyte.ceng.internship.ims.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
