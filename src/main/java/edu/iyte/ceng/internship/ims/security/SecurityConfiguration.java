@@ -34,19 +34,6 @@ public class SecurityConfiguration {
         return http.build();
     }
 
-    // TODO: Not necessary for swagger to work and causes problem with register and login. Figure out why and correct, or just remove.
-    /*@Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        CorsConfiguration corsConfiguration = new CorsConfiguration().applyPermitDefaultValues();
-        corsConfiguration.addAllowedMethod("GET");
-        corsConfiguration.addAllowedMethod("PUT");
-        corsConfiguration.addAllowedMethod("DELETE");
-        corsConfiguration.addAllowedMethod("PATCH");
-        source.registerCorsConfiguration("/**", corsConfiguration);
-        return source;
-    }*/
-
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder() {
         return new BCryptPasswordEncoder();
