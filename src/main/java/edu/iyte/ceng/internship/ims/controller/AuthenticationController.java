@@ -35,7 +35,7 @@ public class AuthenticationController {
 
     @PostMapping("/register/firm")
     public ResponseEntity<LoginResponse> createFirm(@Valid @RequestBody FirmRegisterRequest firmRegisterRequest) {
-        firmService.createFirm(firmRegisterRequest);
+        authenticationService.registerFirm(firmRegisterRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(firmRegisterRequest.getEmail(), firmRegisterRequest.getPassword()));
         HttpHeaders headers = new HttpHeaders();
