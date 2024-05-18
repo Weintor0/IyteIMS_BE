@@ -19,7 +19,7 @@ public class FirmController {
 
     @PutMapping("/update/{userId}")
     public ResponseEntity<FirmResponse> updateFirm(@PathVariable("userId") String userId, @Valid @RequestBody UpdateFirmRequest updateRequest) {
-        FirmResponse response = firmService.updateFirm(userId, updateRequest, authenticationService.getCurrentUser());
+        FirmResponse response = firmService.updateFirm(userId, updateRequest);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
