@@ -19,7 +19,6 @@ public class StudentMapper {
     public StudentResponse fromEntity(Student student) {
         StudentResponse response = StudentResponse.builder()
                 .user(userMapper.fromUser(student.getUser()))
-                .id(student.getId())
                 .studentNumber(student.getStudentNumber())
                 .name(student.getName())
                 .surname(student.getSurname())

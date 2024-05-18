@@ -1,6 +1,9 @@
 package edu.iyte.ceng.internship.ims.exception;
 
+import lombok.Getter;
+
 public class BusinessException extends RuntimeException {
+    @Getter
     private final ErrorCode errorCode;
     private final String message;
 
@@ -14,7 +17,4 @@ public class BusinessException extends RuntimeException {
         return message;
     }
 
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
 }
