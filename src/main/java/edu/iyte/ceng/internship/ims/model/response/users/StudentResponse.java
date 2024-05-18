@@ -9,7 +9,6 @@ import java.util.Date;
 @Data
 public class StudentResponse {
     private UserResponse user;
-    private String id;
     private String studentNumber;
     private String name;
     private String surname;
