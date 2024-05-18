@@ -23,7 +23,7 @@ public class FirmService {
     private UserService userService;
     private FirmMapper firmMapper;
 
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     public FirmResponse createFirm(FirmRegisterRequest createRequest) {
         User user = userService.createUser(
             createRequest.getEmail(), 
@@ -46,7 +46,7 @@ public class FirmService {
         return firmMapper.fromEntity(firm);
     }
 
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Throwable.class)
     public FirmResponse updateFirm(String userId, UpdateFirmRequest updateRequest) {
         User user = userService.getUserById(userId);
         Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
