@@ -37,7 +37,7 @@ public class InternshipOfferService {
     public InternshipOfferResponse createInternshipOffer(CreateInternshipOfferRequest internshipOfferRequest) {
         ensureCreatePrivilege();
         InternshipOffer internshipOffer = new InternshipOffer();
-        internshipOfferMapper.fromCreateRequest(internshipOffer, internshipOfferRequest);
+        internshipOfferMapper.fromCreateRequest(internshipOffer, internshipOfferRequest, authenticationService.getCurrentUser().getId());
         internshipOfferRepository.save(internshipOffer);
         return internshipOfferMapper.fromEntity(internshipOffer);
     }
