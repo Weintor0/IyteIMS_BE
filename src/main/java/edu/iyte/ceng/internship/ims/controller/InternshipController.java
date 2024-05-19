@@ -20,16 +20,19 @@ import java.util.List;
 public class InternshipController {
     private final InternshipService internshipService;
 
+    /** Get a particular internship record */
     @GetMapping(path = "/get/{internshipId}")
     public ResponseEntity<Internship> getInternshipById(String id) {
         return new ResponseEntity<>(internshipService.getInternshipById(id), HttpStatus.OK);
     }
 
+    /** Get all internship records */
     @GetMapping(path = "/get-all")
     public ResponseEntity<List<Internship>> getInternship() {
         return new ResponseEntity<>(internshipService.getInternships(), HttpStatus.OK);
     }
 
+    /** Send Application Letter */
     @PostMapping(path = "/application-letter/send/{offerId}",
                  consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SendApplicationLetterResponse> sendApplicationLetter(
@@ -39,11 +42,31 @@ public class InternshipController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    /** Evaluate Application Letter */
     @PatchMapping(path = "/application-letter/evaluate/{internshipId}")
     public ResponseEntity<HttpStatus> updateApplicationLetterAcceptance(
             @PathVariable("internshipId") String internshipId,
             UpdateDocumentAcceptanceRequest request) {
         internshipService.updateApplicationLetterAcceptance(internshipId, request);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /** Send Application Form */
+    @PostMapping(path = "/application-form/send/{internshipId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<HttpStatus> sendApplicationForm(
+            @PathVariable("internshipId") String internshipId,
+            @RequestPart("file") MultipartFile file) throws IOException {
+        internshipService.sendApplicationForm(internshipId, file);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    /** Evaluate Application Form */
+    @PatchMapping(path = "/application-form/evaluate/{internshipId}")
+    public ResponseEntity<HttpStatus> updateApplicationFormAcceptance(
+            @PathVariable("internshipId") String internshipId,
+            UpdateDocumentAcceptanceRequest request) {
+        internshipService.updateApplicationFormAcceptance(internshipId, request);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
