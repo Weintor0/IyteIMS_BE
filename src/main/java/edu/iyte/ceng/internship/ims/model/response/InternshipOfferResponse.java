@@ -7,4 +7,8 @@ import lombok.Data;
 @Builder
 public class InternshipOfferResponse {
     private String offerId ;
+    private String firmId ;
+    private String title;
+    private String jobTitle;
+    private String content;
 }
