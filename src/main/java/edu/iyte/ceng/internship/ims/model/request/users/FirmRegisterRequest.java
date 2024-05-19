@@ -14,9 +14,6 @@ import lombok.Data;
 @Data
 @AssociatedWithEntity(entityName = Firm.entityName)
 public class FirmRegisterRequest {
-    @JsonFormat(pattern = "dd.MM.yyyy")
-    @NotNull(message = "Register date cannot be empty.")
-    private Date registerDate;
 
     @NotBlank(message = "Firm name cannot be empty.")
     private String firmName;

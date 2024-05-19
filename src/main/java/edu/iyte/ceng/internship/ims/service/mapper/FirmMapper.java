@@ -35,7 +35,6 @@ public class FirmMapper {
     public Firm fromRequest(FirmRegisterRequest firmRegisterRequest, User user) {
         Firm firm = Firm.builder()
                 .user(user)
-                .registerDate(firmRegisterRequest.getRegisterDate())
                 .firmName(firmRegisterRequest.getFirmName())
                 .typeOfBusiness(firmRegisterRequest.getTypeOfBusiness())
                 .businessRegistrationNumber(firmRegisterRequest.getBusinessRegistrationNumber())
