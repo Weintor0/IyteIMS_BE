@@ -37,6 +37,7 @@ public class FirmService {
     @Transactional(rollbackFor = Throwable.class)
     public FirmResponse updateFirm(String userId, UpdateFirmRequest updateRequest) {
         User user = userService.getUserById(userId);
+        ensureReadPrivilege(userId);
         Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
                 () -> new BusinessException(ErrorCode.AccountMissing, "Firm with user ID " + userId + " does not exist.")
         );
@@ -51,11 +52,9 @@ public class FirmService {
         return firmMapper.fromEntity(savedFirm);
     }
 
-    private void ensureReadPrivilege(String currentId) {
-        authenticationService.getCurrentUser();
-        User currentUser = userService.getUserById(currentId);
-
-        if (!currentUser.getId().equals(currentId)) {
+    private void ensureReadPrivilege(String userId) {
+        User currentUser = authenticationService.getCurrentUser();
+        if (!currentUser.getId().equals(userId)) {
             throw new BusinessException(ErrorCode.Forbidden, "A firm can only read its own account information");
         }
     }
