@@ -58,14 +58,17 @@ public class InternshipService {
                 break;
             }
             case DepartmentSecretary: {
-                TransactionsState state = internship.getCurrentTransactionsState();
-                if (state != TransactionsState.DepartmentSecretary &&
-                    state != TransactionsState.DeansOffice &&
-                    state != TransactionsState.Completed) {
-                    throw new BusinessException(ErrorCode.Unauthorized,
-                            "The department secretary is only responsible with internships requiring insurance");
+                InternshipStatus state = internship.getStatus();
+                // Either the internship is within SSI transactions or has completed the transactions (an employment document exists)
+                // Otherwise it is not department secretary's responsibility.
+                if ((state.getOrder() >= InternshipStatus.CoordinatorSentFormToDepartmentSecretary.getOrder() &&
+                    state.getOrder() <= InternshipStatus.DepartmentSecretaryUploadedEmploymentDocument.getOrder()) ||
+                    internship.getEmploymentDocument() != null) {
+                    break;
                 }
-                break;
+
+                throw new BusinessException(ErrorCode.Unauthorized,
+                        "The department secretary is only responsible with internships requiring insurance");
             }
             case InternshipCoordinator:
                 break;
@@ -97,14 +100,11 @@ public class InternshipService {
 
             case DepartmentSecretary: {
                 List<Internship> internships = new ArrayList<>();
-
-                internships.addAll(internshipRepository.findByCurrentTransactionsState(
-                        TransactionsState.DeansOffice));
-                internships.addAll(internshipRepository.findByCurrentTransactionsState(
-                        TransactionsState.DepartmentSecretary));
-                internships.addAll(internshipRepository.findByCurrentTransactionsState(
-                        TransactionsState.Completed));
-
+                internships.addAll(internshipRepository.findByStatus(
+                        InternshipStatus.CoordinatorSentFormToDepartmentSecretary));
+                internships.addAll(internshipRepository.findByStatus(
+                        InternshipStatus.DepartmentSecretaryUploadedEmploymentDocument));
+                internships.addAll(internshipRepository.findByEmploymentDocumentIsNotNull());
                 return internships;
             }
 
@@ -139,10 +139,10 @@ public class InternshipService {
         // Create and save the internship record in the database.
         Internship internship = internshipRepository.save(
                 Internship.builder()
+                          .status(InternshipStatus.StudentSentApplicationLetter)
                           .student(student)
                           .internshipOffer(internshipOffer)
                           .applicationLetter(letter)
-                          .applicationFormAcceptanceStatus(AcceptanceStatus.NotEvaluated)
                           .build()
         );
 
@@ -177,15 +177,17 @@ public class InternshipService {
         );
 
         // Ensure that the letter was not evaluated before. It is not permitted to change the approval state twice.
-        if (internship.getApplicationLetterAcceptanceStatus() != AcceptanceStatus.NotEvaluated) {
+        if (internship.getStatus() != InternshipStatus.StudentSentApplicationLetter) {
             throw new BusinessException(ErrorCode.Forbidden, "The application letter has already been evaluated");
         }
 
         // Set the acceptance state
         boolean accepted = acceptance.getAcceptance();
-        internship.setApplicationLetterAcceptanceStatus(
-                accepted ? AcceptanceStatus.Accepted : AcceptanceStatus.Rejected
-        );
+        if (accepted) {
+            internship.setStatus(InternshipStatus.FirmAcceptedApplicationLetter);
+        } else {
+            internship.setStatus(InternshipStatus.FirmRejectedApplicationLetter);
+        }
 
         // Send notification to the student.
         notificationService.createNotification(internship.getStudent().getUser().getId(),
@@ -224,13 +226,24 @@ public class InternshipService {
                 throw new BusinessException(ErrorCode.Forbidden,
                         "Only students and firms can send application forms");
         }
+
+        internshipRepository.save(internship);
     }
 
     private void sendApplicationFormByStudent(Internship internship, Student student, MultipartFile file) throws IOException {
         // Ensure that the application letter was accepted by the firm.
-        if (internship.getApplicationLetterAcceptanceStatus() != AcceptanceStatus.Accepted) {
+        if (internship.getStatus() == InternshipStatus.FirmRejectedApplicationLetter) {
             throw new BusinessException(ErrorCode.Forbidden,
                     "Students cannot send application forms to firms that have rejected them.");
+        }
+
+        // Ensure that the internship is in a state in which an application form can be set by the student
+        boolean receivedApprovalForLetter = internship.getStatus() == InternshipStatus.FirmAcceptedApplicationLetter;
+        boolean coordinatorRequestedChangeInForm = internship.getStatus() == InternshipStatus.CoordinatorRejectedApplicationForm;
+        if (!(receivedApprovalForLetter || coordinatorRequestedChangeInForm)) {
+            throw new BusinessException(ErrorCode.Forbidden,
+                    "A student can only send an application form if her letter was recently accepted, or the" +
+                            "coordinator had requested a modification in the previously sent application form");
         }
 
         // Save the application form document to the database.
@@ -246,14 +259,18 @@ public class InternshipService {
 
         // Update the internship record.
         internship.setApplicationFormByStudent(form);
+        internship.setStatus(InternshipStatus.StudentSentApplicationForm);
     }
 
     private void sendApplicationFormByFirm(Internship internship, Firm firm, MultipartFile file) throws IOException {
-        // Ensure that the application form was sent by the student.
-        if (internship.getApplicationFormByStudent() == null) {
+        // Ensure that the student has sent an application form, or the coordinator requested change.
+        boolean studentSentForm = internship.getStatus() == InternshipStatus.StudentSentApplicationForm;
+        boolean coordinatorRequestedChangeInForm = internship.getStatus() == InternshipStatus.CoordinatorRejectedApplicationForm;
+        if (!(studentSentForm || coordinatorRequestedChangeInForm)) {
             throw new BusinessException(ErrorCode.Forbidden,
                     "Before a company can send the filled application form to a student, " +
-                            "the student must have sent the initial form to the firm.");
+                            "the student must have sent the form to the firm, or the coordinator must have requested change" +
+                            "in a previous form.");
 
         }
 
@@ -270,7 +287,7 @@ public class InternshipService {
 
         // Update the internship record.
         internship.setApplicationFormByFirm(form);
-        internship.setCurrentTransactionsState(TransactionsState.InternshipCoordinator);
+        internship.setStatus(InternshipStatus.FirmSentApplicationForm);
     }
 
     public void updateApplicationFormAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
@@ -285,24 +302,22 @@ public class InternshipService {
                     "Only the internship coordinator can approve or reject an application form.");
         }
 
-        if (internship.getApplicationFormByFirm() == null) {
+        if (internship.getStatus() != InternshipStatus.FirmSentApplicationForm) {
             throw new BusinessException(ErrorCode.Forbidden,
                     "In order for the internship coordinator to be able to accept or reject an application form" +
                             "the firm must have been responded with a filled application form.");
         }
 
-        // Ensure that the form was not evaluated before. It is not permitted to change the approval state twice.
-        if (internship.getApplicationFormAcceptanceStatus() != AcceptanceStatus.NotEvaluated) {
-            throw new BusinessException(ErrorCode.Forbidden, "The application form has already been evaluated");
-        }
-
         // Set the acceptance state
         boolean accepted = acceptance.getAcceptance();
-        internship.setApplicationFormAcceptanceStatus(
-                accepted ? AcceptanceStatus.Accepted : AcceptanceStatus.Rejected
-        );
+        if (accepted) {
+            internship.setStatus(InternshipStatus.CoordinatorAcceptedApplicationForm);
+        } else {
+            internship.setStatus(InternshipStatus.CoordinatorRejectedApplicationForm);
+        }
 
         String acceptedRejectMessage = accepted ? "accepted" : "rejected";
+        String feedback = acceptance.getFeedback() == null ? "" : "Feedback: " + acceptance.getFeedback();
 
         // Send notification to the firm.
         notificationService.createNotification(internship.getInternshipOffer().getFirmId(),
@@ -310,7 +325,7 @@ public class InternshipService {
                         .builder()
                         .content("The internship coordinator has " + acceptedRejectMessage
                                 + " the application form for student" +
-                                internship.getStudent().getStudentNumber())
+                                internship.getStudent().getStudentNumber() + "\n" + feedback)
                         .build());
 
         // Send notification to the student.
@@ -319,7 +334,7 @@ public class InternshipService {
                         .builder()
                         .content("The internship coordinator has "+ acceptedRejectMessage
                                 + " the application form for " +
-                                internship.getInternshipOffer().getFirmId()) // TODO
+                                internship.getInternshipOffer().getFirmId() + "\n" + feedback)
                         .build());
     }
 }
