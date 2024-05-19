@@ -31,6 +31,7 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private FirmRepository firmRepository;
     private FirmMapper firmMapper;
+    private UserService user ;
 
     public LoginResponse login(LoginRequest loginRequest) {
         User user = userService.getUserByEmail(loginRequest.getEmail());
@@ -56,8 +57,8 @@ public class AuthenticationService {
         return firmMapper.fromEntity(createdFirm);
     }
 
-    public Optional<User> getCurrentUser() {
-        return userRepository.findById(SecurityContextHolder.getContext().getAuthentication().getName());
+    public User getCurrentUser() {
+        return user.getUserById(SecurityContextHolder.getContext().getAuthentication().getName());
     }
 
 }
