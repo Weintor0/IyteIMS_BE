@@ -3,6 +3,7 @@ package edu.iyte.ceng.internship.ims.service;
 import edu.iyte.ceng.internship.ims.entity.*;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.ErrorCode;
+import edu.iyte.ceng.internship.ims.model.request.internship.UpdateDocumentAcceptanceRequest;
 import edu.iyte.ceng.internship.ims.model.request.notification.CreateNotificationRequest;
 import edu.iyte.ceng.internship.ims.model.response.internship.SendApplicationLetterResponse;
 import edu.iyte.ceng.internship.ims.repository.FirmRepository;
@@ -154,5 +155,39 @@ public class InternshipService {
 
         // Return the Internship ID.
         return new SendApplicationLetterResponse(internship.getId());
+    }
+
+    public void updateApplicationLetterAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
+        User user = authenticationService.getCurrentUser();
+
+        // Ensure that the user is a Firm.
+        if (user.getUserRole() != UserRole.Firm) {
+            throw new BusinessException(ErrorCode.Forbidden, "Only firms can evaluate application letters");
+        }
+
+        // Get the Firm record.
+        Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
+                () -> new IllegalStateException("UserRole implies the existence of a Firm, but it does not exist.")
+        );
+
+        // Get the internship record.
+        Internship internship = internshipRepository.findById(internshipId).orElseThrow(
+                () -> new BusinessException(ErrorCode.ResourceMissing,
+                        "Internship with ID " + internshipId + " does not exist.")
+        );
+
+        // Set the acceptance state
+        boolean accepted = acceptance.getAcceptance();
+        internship.setApplicationLetterAcceptanceStatus(
+                accepted ? AcceptanceStatus.Accepted : AcceptanceStatus.Rejected
+        );
+
+        // Send notification to the student.
+        notificationService.createNotification(internship.getStudent().getUser().getId(),
+                CreateNotificationRequest
+                        .builder()
+                        .content(firm.getFirmName() + " has " + (accepted ? "accepted" : "rejected")
+                                + " your application letter.")
+                        .build());
     }
 }
