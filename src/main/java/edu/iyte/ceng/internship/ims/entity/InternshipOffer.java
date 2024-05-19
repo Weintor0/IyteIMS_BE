@@ -25,6 +25,7 @@ public class InternshipOffer extends BaseEntity {
     private String title;
     private String content ;
     private Boolean accepted ;
+
     @Column(name = "created", nullable = false, updatable = false)
     @CreatedDate
     @Setter(AccessLevel.NONE)
