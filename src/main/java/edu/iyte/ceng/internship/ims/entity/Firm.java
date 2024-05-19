@@ -1,11 +1,13 @@
 package edu.iyte.ceng.internship.ims.entity;
 
+import java.time.ZonedDateTime;
 import java.util.Date;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
 @Getter
 @Setter
@@ -25,9 +27,10 @@ public class Firm extends BaseEntity {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
 
-    @NotNull
-    @Column(name = "register_date")
-    private Date registerDate;
+    @Column(name = "created", nullable = false, updatable = false)
+    @CreatedDate
+    @Setter(AccessLevel.NONE)
+    private ZonedDateTime registerDate;
 
     @NotNull
     @NotBlank
