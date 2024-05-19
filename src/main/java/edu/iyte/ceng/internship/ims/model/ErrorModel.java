@@ -1,20 +1,21 @@
-package edu.iyte.ceng.internship.ims.exception;
+package edu.iyte.ceng.internship.ims.model;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
+import edu.iyte.ceng.internship.ims.util.DateUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
 @Data
-public class ErrorResponse {
-    private final LocalDateTime timestamp;
+public class ErrorModel {
+    private final ZonedDateTime timestamp;
     private final List<Error> errors;
 
-    public ErrorResponse(List<Error> errors) {
-        this.timestamp = LocalDateTime.now();
+    public ErrorModel(List<Error> errors) {
+        this.timestamp = DateUtil.now();
         this.errors = errors;
     }
 

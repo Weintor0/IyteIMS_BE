@@ -1,17 +1,20 @@
 package edu.iyte.ceng.internship.ims.service;
 
+import edu.iyte.ceng.internship.ims.entity.UserRole;
+import edu.iyte.ceng.internship.ims.model.response.users.StudentResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import edu.iyte.ceng.internship.ims.entity.Student;
 import edu.iyte.ceng.internship.ims.entity.User;
-import edu.iyte.ceng.internship.ims.entity.UserRole;
+//import edu.iyte.ceng.internship.ims.entity.UserRole; // TODO
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
-import edu.iyte.ceng.internship.ims.model.request.CreateStudentRequest;
-import edu.iyte.ceng.internship.ims.model.request.UpdateStudentRequest;
+import edu.iyte.ceng.internship.ims.exception.ErrorCode;
+import edu.iyte.ceng.internship.ims.model.request.users.StudentRegisterRequest;
+import edu.iyte.ceng.internship.ims.model.request.users.UpdateStudentRequest;
 import edu.iyte.ceng.internship.ims.repository.StudentRepository;
+import edu.iyte.ceng.internship.ims.service.mapper.StudentMapper;
 import lombok.AllArgsConstructor;
 
 @Service
@@ -19,59 +22,59 @@ import lombok.AllArgsConstructor;
 public class StudentService {
     private StudentRepository studentRepository;
     private UserService userService;
+    private StudentMapper studentMapper;
 
-    @Transactional(rollbackFor = Exception.class)
-    public Long createStudent(CreateStudentRequest createRequest) {
+    @Transactional(rollbackFor = Throwable.class)
+    public StudentResponse createStudent(StudentRegisterRequest createRequest) {
         User user = userService.createUser(
-            UserRole.Student, 
             createRequest.getEmail(), 
-            createRequest.getPassword());
+            createRequest.getPassword(),
+            UserRole.Student);
 
-        Student student = new Student(
-            user.getUserId(),
-            user,
-            createRequest.getStudentNumber(),
-            createRequest.getBirthDate(),
-            createRequest.getName(),
-            createRequest.getSurname());
-
-        return studentRepository.save(student).getUser().getUserId();
+        Student student = studentMapper.fromRequest(createRequest, user);
+        Student savedStudent = studentRepository.save(student);
+        return studentMapper.fromEntity(savedStudent);
     }
 
-    public Student getStudent(Long userId) {
-        Student student = studentRepository.findStudentById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, 
+    public StudentResponse getStudent(String userId) {
+        User user = userService.getUserById(userId);
+        Student student = studentRepository.findStudentByUser(user).orElseThrow(
+            () -> new BusinessException(ErrorCode.AccountMissing,
             "Student with User ID " + userId + " does not exist")
         );
 
         ensureReadPrivilege(userId);
-        return student;
+        return studentMapper.fromEntity(student);
     }
 
-    public Student updateStudent(Long userId, UpdateStudentRequest updateRequest) {
+    @Transactional(rollbackFor = Throwable.class)
+    public StudentResponse updateStudent(String userId, UpdateStudentRequest updateRequest) {
         userService.updateUser(
             userId, 
             updateRequest.getEmail(), 
             updateRequest.getPassword()
         );
 
-        return studentRepository.findById(userId).get();
+        Student updatedStudent = studentRepository.findById(userId).orElseThrow(
+                () -> new IllegalStateException("User disappeared within a single transaction.")
+        );
+        return studentMapper.fromEntity(updatedStudent);
     }
 
-    private void ensureReadPrivilege(Long userId) {
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userService.getUserByEmail(currentEmail);
+    private void ensureReadPrivilege(String userId) {
+        String currentId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userService.getUserById(currentId);
 
         switch (currentUser.getUserRole()) {
             case Student:
-                if (!currentUser.getUserId().equals(userId)) {
-                    throw new BusinessException(BusinessExceptionType.Forbidden, 
+                if (!currentUser.getId().equals(userId)) {
+                    throw new BusinessException(ErrorCode.Forbidden,
                     "Students can only access their own profile information.");
                 }
                 break;
             case Firm:
-                // TODO
-                throw new BusinessException(BusinessExceptionType.Forbidden, 
+                // TODO: The required logic will be added after implementing internship.
+                throw new BusinessException(ErrorCode.Forbidden,
                 "Firms can only access the information of students working within their company.");
             default:
                 break;

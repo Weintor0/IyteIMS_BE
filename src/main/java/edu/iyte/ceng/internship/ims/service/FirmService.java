@@ -1,60 +1,45 @@
 package edu.iyte.ceng.internship.ims.service;
 
+import edu.iyte.ceng.internship.ims.entity.Firm;
+import edu.iyte.ceng.internship.ims.entity.User;
+import edu.iyte.ceng.internship.ims.exception.BusinessException;
+import edu.iyte.ceng.internship.ims.exception.ErrorCode;
+import edu.iyte.ceng.internship.ims.model.request.users.UpdateFirmRequest;
+import edu.iyte.ceng.internship.ims.model.response.users.FirmResponse;
+import edu.iyte.ceng.internship.ims.repository.FirmRepository;
+import edu.iyte.ceng.internship.ims.service.mapper.FirmMapper;
+import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import edu.iyte.ceng.internship.ims.entity.Firm;
-import edu.iyte.ceng.internship.ims.entity.User;
-import edu.iyte.ceng.internship.ims.entity.UserRole;
-import edu.iyte.ceng.internship.ims.exception.BusinessException;
-import edu.iyte.ceng.internship.ims.exception.BusinessExceptionType;
-import edu.iyte.ceng.internship.ims.model.request.CreateFirmRequest;
-import edu.iyte.ceng.internship.ims.model.request.UpdateFirmRequest;
-import edu.iyte.ceng.internship.ims.repository.FirmRepository;
-import lombok.AllArgsConstructor;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
 public class FirmService {
     private FirmRepository firmRepository;
     private UserService userService;
+    private FirmMapper firmMapper;
+    private AuthenticationService authenticationService;
 
-    @Transactional(rollbackFor = Exception.class)
-    public Long createFirm(CreateFirmRequest createRequest) {
-        User user = userService.createUser(
-            UserRole.Student, 
-            createRequest.getEmail(), 
-            createRequest.getPassword());
 
-        Firm firm = new Firm(
-            user.getUserId(),
-            user,
-            createRequest.getRegisterDate(),
-            createRequest.getFirmName(),
-            createRequest.getTypeOfBusiness(),
-            createRequest.getBusinessRegistrationNumber(),
-            createRequest.getLegalStructure(),
-            createRequest.getPhoneNumber(),
-            createRequest.getAddress());
-
-        return firmRepository.save(firm).getUser().getUserId();
-    }
-
-    public Firm getFirm(Long userId) {
-        Firm firm = firmRepository.findFirmById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, 
-            "Firm with User ID " + userId + " does not exist")
+    public FirmResponse getFirm(String userId) {
+        User user = userService.getUserById(userId);
+        Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
+                () -> new BusinessException(ErrorCode.AccountMissing,
+                        "Firm with User ID " + userId + " does not exist")
         );
-
         ensureReadPrivilege(userId);
-        return firm;
+        return firmMapper.fromEntity(firm);
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public Firm updateFirm(Long userId, UpdateFirmRequest updateRequest) {
-        Firm firm = firmRepository.findFirmById(userId).orElseThrow(
-            () -> new BusinessException(BusinessExceptionType.AccountMissing, "Firm with user ID " + userId + " does not exist.")
+    @Transactional(rollbackFor = Throwable.class)
+    public FirmResponse updateFirm(String userId, UpdateFirmRequest updateRequest) {
+        User user = userService.getUserById(userId);
+        ensureReadPrivilege(userId);
+        Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
+                () -> new BusinessException(ErrorCode.AccountMissing, "Firm with user ID " + userId + " does not exist.")
         );
 
         userService.updateUser(userId, updateRequest.getEmail(), updateRequest.getPassword());
@@ -63,15 +48,14 @@ public class FirmService {
         if (updateRequest.getFirmName() != null) firm.setFirmName(updateRequest.getFirmName());
         if (updateRequest.getPhoneNumber() != null) firm.setPhoneNumber(updateRequest.getPhoneNumber());
 
-        return firmRepository.save(firm);
+        Firm savedFirm = firmRepository.save(firm);
+        return firmMapper.fromEntity(savedFirm);
     }
 
-    public void ensureReadPrivilege(Long userToBeAccessed) {
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userService.getUserByEmail(currentEmail);
-
-        if (!currentUser.getUserId().equals(userToBeAccessed)) {
-            throw new BusinessException(BusinessExceptionType.Forbidden, "A firm can only read its own account information");
+    private void ensureReadPrivilege(String userId) {
+        User currentUser = authenticationService.getCurrentUser();
+        if (!currentUser.getId().equals(userId)) {
+            throw new BusinessException(ErrorCode.Forbidden, "A firm can only read its own account information");
         }
     }
 }

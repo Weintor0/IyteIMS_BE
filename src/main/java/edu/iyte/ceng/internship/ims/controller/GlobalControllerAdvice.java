@@ -1,8 +1,10 @@
-package edu.iyte.ceng.internship.ims.exception;
+package edu.iyte.ceng.internship.ims.controller;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
+import edu.iyte.ceng.internship.ims.exception.BusinessException;
+import edu.iyte.ceng.internship.ims.model.ErrorModel;
 import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -32,22 +34,22 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 @ControllerAdvice
-public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler {
+public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler({BusinessException.class})
     public ResponseEntity<Object> handleBusinessException(BusinessException ex) {
-        ErrorResponse.Error error = ErrorResponse.Error.builder()
+        ErrorModel.Error error = ErrorModel.Error.builder()
                 .constraint(ex.getErrorCode().name())
                 .message(ex.getMessage())
                 .entity(null)
                 .attribute(null)
                 .build();
 
-        ErrorResponse response = new ErrorResponse(List.of(error));
+        ErrorModel response = new ErrorModel(List.of(error));
         return new ResponseEntity<>(response, ex.getErrorCode().getHttpStatusCode());
     }
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
-        List<ErrorResponse.Error> errors = new ArrayList<>();
+        List<ErrorModel.Error> errors = new ArrayList<>();
 
         // Look for all classes annotated with Table (which are entity classes)
         ClassPathScanningCandidateComponentProvider scanner = new ClassPathScanningCandidateComponentProvider(false);
@@ -77,13 +79,14 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
             Table tbl = clazz.getAnnotation(Table.class);
             for (UniqueConstraint uniqueConstraint : tbl.uniqueConstraints()) {
                 String constraintName = uniqueConstraint.name();
+
                 // If the exception that was thrown contains the name of the uniqueness constraint in its
                 // message, determine attribute name and add the error to the list.
-                if (ex.getMessage().contains(constraintName)) {
+                if (ex.getMessage().toUpperCase().contains(constraintName.toUpperCase())) {
                     String columnName = uniqueConstraint.columnNames()[0];
                     String attributeName = attributeToColumnMap.get(columnName);
 
-                    ErrorResponse.Error error = ErrorResponse.Error.builder()
+                    ErrorModel.Error error = ErrorModel.Error.builder()
                             .entity(entityName)
                             .attribute(attributeName)
                             .constraint("Unique")
@@ -95,13 +98,13 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
             }
         }
 
-        ErrorResponse response = new ErrorResponse(errors);
+        ErrorModel response = new ErrorModel(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex) {
-        List<ErrorResponse.Error> errors = new ArrayList<>();
+        List<ErrorModel.Error> errors = new ArrayList<>();
 
         ConstraintViolation<?> violation = ex.getConstraintViolations().iterator().next();
 
@@ -114,7 +117,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
         String constraint = violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName();
         String message = violation.getMessage();
 
-        ErrorResponse.Error error = ErrorResponse.Error.builder()
+        ErrorModel.Error error = ErrorModel.Error.builder()
                 .entity(entity)
                 .attribute(attribute)
                 .constraint(constraint)
@@ -122,7 +125,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 .build();
         errors.add(error);
 
-        ErrorResponse response = new ErrorResponse(errors);
+        ErrorModel response = new ErrorModel(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -131,7 +134,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
-        List<ErrorResponse.Error> errors = new ArrayList<>();
+        List<ErrorModel.Error> errors = new ArrayList<>();
         Throwable cause = exception.getCause();
         if (cause instanceof InvalidFormatException formatException) {
             List<JsonMappingException.Reference> path = formatException.getPath();
@@ -140,7 +143,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                 AssociatedWithEntity entityAnnotation = originOfError.getFrom().getClass().getAnnotation(AssociatedWithEntity.class);
                 String entity = entityAnnotation.entityName();
 
-                ErrorResponse.Error errorEntry = ErrorResponse.Error.builder()
+                ErrorModel.Error errorEntry = ErrorModel.Error.builder()
                         .entity(entity)
                         .attribute(field)
                         .constraint("Format")
@@ -153,7 +156,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        ErrorResponse response = new ErrorResponse(errors);
+        ErrorModel response = new ErrorModel(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
@@ -162,7 +165,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
                                                                   @NonNull HttpHeaders headers,
                                                                   @NonNull HttpStatusCode status,
                                                                   @NonNull WebRequest request) {
-        List<ErrorResponse.Error> errors = new ArrayList<>();
+        List<ErrorModel.Error> errors = new ArrayList<>();
 
         // Get entity name where the constraint was violated.
         Object target = ex.getTarget();
@@ -174,7 +177,7 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
         List<ObjectError> allErrors = ex.getBindingResult().getAllErrors();
         for (ObjectError err : allErrors) {
             if (err instanceof FieldError fieldError) {
-                ErrorResponse.Error error = ErrorResponse.Error.builder()
+                ErrorModel.Error error = ErrorModel.Error.builder()
                         .entity(entity)
                         .attribute(fieldError.getField())
                         .constraint(fieldError.getCode())
@@ -186,7 +189,12 @@ public class ApplicationExceptionHandler extends ResponseEntityExceptionHandler 
             }
         }
 
-        ErrorResponse response = new ErrorResponse(errors);
+        ErrorModel response = new ErrorModel(errors);
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<HttpStatus> handleIllegalStateException(IllegalStateException exception) {
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

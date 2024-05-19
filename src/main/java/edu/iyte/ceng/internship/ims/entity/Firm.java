@@ -1,78 +1,63 @@
 package edu.iyte.ceng.internship.ims.entity;
 
+import java.time.ZonedDateTime;
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 
 @Getter
 @Setter
 @Entity
+@Builder
 @Table(name = "firm", uniqueConstraints = {
     @UniqueConstraint(name = "UC_FIRM_NAME", columnNames = { "firm_name" }),
     @UniqueConstraint(name = "UC_BUSINESS_REGISTRATION_NUMBER", columnNames = { "business_registration_number" })
 })
-@RequiredArgsConstructor
+@AllArgsConstructor
 @NoArgsConstructor
 @AssociatedWithEntity(entityName = Firm.entityName)
-public class Firm {
+public class Firm extends BaseEntity {
     public static final String entityName = "Firm";
 
-    @Id
-    @NonNull
-    @Column(name = "user_id")
-    private Long id;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @PrimaryKeyJoinColumn(name = "user_id", referencedColumnName = "user_id")
-    @NonNull
+    @OneToOne(cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
 
-    @NonNull
-    @Column(name = "register_date")
-    @JsonFormat(pattern = "dd.MM.yyyy")
-    private Date registerDate;
+    @Column(name = "created", nullable = false, updatable = false)
+    @CreatedDate
+    @Setter(AccessLevel.NONE)
+    private ZonedDateTime registerDate;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "firm_name")
     private String firmName;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "type_of_business")
     private String typeOfBusiness;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "business_registration_number")
     private String businessRegistrationNumber;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "legal_structure")
     private String legalStructure;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "phone_number")
     private String phoneNumber;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "address")
     private String address;

@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum BusinessExceptionType {
+public enum ErrorCode {
     Unknown(HttpStatus.BAD_REQUEST),
     Unauthorized(HttpStatus.UNAUTHORIZED),
     Forbidden(HttpStatus.FORBIDDEN),

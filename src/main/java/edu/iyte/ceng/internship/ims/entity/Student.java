@@ -2,63 +2,45 @@ package edu.iyte.ceng.internship.ims.entity;
 
 import java.util.Date;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @Entity
+@Builder
 @Table(name = "student", uniqueConstraints = {
     @UniqueConstraint(name = "UC_STUDENT_NUMBER", columnNames = {"student_number"})
 })
-@RequiredArgsConstructor
+@AllArgsConstructor
 @NoArgsConstructor
 @AssociatedWithEntity(entityName = Student.entityName)
-public class Student {
+public class Student extends BaseEntity {
     public static final String entityName = "Student";
 
-    @Id
-    @NonNull
-    @Column(name = "user_id")
-    private Long id;
-
-    @OneToOne(cascade = CascadeType.ALL)
-    @PrimaryKeyJoinColumn(name = "user_id", referencedColumnName = "user_id")
-    @NonNull
+    @OneToOne(cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User user;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "student_number")
     private String studentNumber;
 
-    @NonNull
+    @NotNull
     @Past
     @Column(name = "birth_date")
-    @JsonFormat(pattern = "dd.MM.yyyy")
     private Date birthDate;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "name")
     private String name;
 
-    @NonNull
+    @NotNull
     @NotBlank
     @Column(name = "surname")
     private String surname;
