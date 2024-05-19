@@ -1,6 +1,7 @@
 package edu.iyte.ceng.internship.ims.controller;
 
 import edu.iyte.ceng.internship.ims.entity.Internship;
+import edu.iyte.ceng.internship.ims.model.request.internship.UpdateDocumentAcceptanceRequest;
 import edu.iyte.ceng.internship.ims.model.response.internship.SendApplicationLetterResponse;
 import edu.iyte.ceng.internship.ims.service.InternshipService;
 import lombok.AllArgsConstructor;
@@ -19,12 +20,12 @@ import java.util.List;
 public class InternshipController {
     private final InternshipService internshipService;
 
-    @GetMapping("/get/{internshipId}")
+    @GetMapping(path = "/get/{internshipId}")
     public ResponseEntity<Internship> getInternshipById(String id) {
         return new ResponseEntity<>(internshipService.getInternshipById(id), HttpStatus.OK);
     }
 
-    @GetMapping("/get-all")
+    @GetMapping(path = "/get-all")
     public ResponseEntity<List<Internship>> getInternship() {
         return new ResponseEntity<>(internshipService.getInternships(), HttpStatus.OK);
     }
@@ -36,5 +37,13 @@ public class InternshipController {
             @RequestPart("file") MultipartFile file) throws IOException {
         SendApplicationLetterResponse response = internshipService.sendApplicationLetter(offerId, file);
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PatchMapping(path = "/application-letter/evaluate/{internshipId}")
+    public ResponseEntity<HttpStatus> updateApplicationLetterAcceptance(
+            @PathVariable("internshipId") String internshipId,
+            UpdateDocumentAcceptanceRequest request) {
+        internshipService.updateApplicationLetterAcceptance(internshipId, request);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
