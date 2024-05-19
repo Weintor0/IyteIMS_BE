@@ -16,10 +16,9 @@ import org.springframework.web.bind.annotation.*;
 public class InternshipOfferController {
     private final InternshipOfferService internshipOfferService;
 
-    @PostMapping("/createinternship/{userId}")
-    public InternshipOfferResponse createInternship(@Valid @RequestBody CreateInternshipOfferRequest internshipOffer,
-                                                    @PathVariable("userId") String userId) {
-        return internshipOfferService.createInternshipOffer(internshipOffer, userId);
+    @PostMapping("/createinternship")
+    public InternshipOfferResponse createInternship(@Valid @RequestBody CreateInternshipOfferRequest internshipOffer) {
+        return internshipOfferService.createInternshipOffer(internshipOffer);
     }
 
     @GetMapping("/list")
@@ -28,9 +27,8 @@ public class InternshipOfferController {
         return internshipOfferService.listInternshipOffer(PageRequest.of(page, size));
     }
 
-    @PutMapping("/update/{userId}/{offerId}")
-    public InternshipOfferResponse updateInternship(@Valid @RequestBody UpdateInternshipOfferRequest internshipOffer,
-                                                    @PathVariable("userId") String userId, @PathVariable("offerId")String offerId){
-        return internshipOfferService.updateInternshipOffer(internshipOffer, userId, offerId);
+    @PutMapping("/update/{offerId}")
+    public InternshipOfferResponse updateInternship(@Valid @RequestBody UpdateInternshipOfferRequest internshipOffer, @PathVariable("offerId")String offerId){
+        return internshipOfferService.updateInternshipOffer(internshipOffer, offerId);
     }
 }

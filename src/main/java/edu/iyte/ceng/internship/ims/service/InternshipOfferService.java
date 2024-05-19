@@ -34,8 +34,8 @@ public class InternshipOfferService {
         return internshipOfferMapper.fromEntity(internshipOffer);
     }
 
-    public InternshipOfferResponse createInternshipOffer(CreateInternshipOfferRequest internshipOfferRequest, String userId) {
-        ensureCreatePrivilege(userId);
+    public InternshipOfferResponse createInternshipOffer(CreateInternshipOfferRequest internshipOfferRequest) {
+        ensureCreatePrivilege();
         InternshipOffer internshipOffer = new InternshipOffer();
         internshipOfferMapper.fromCreateRequest(internshipOffer, internshipOfferRequest);
         internshipOfferRepository.save(internshipOffer);
@@ -43,11 +43,14 @@ public class InternshipOfferService {
     }
 
     public Page<InternshipOfferResponse> listInternshipOffer(Pageable pageable) {
-        return internshipOfferRepository.findAll(pageable).map(internshipOfferMapper::fromEntity);
+        if(ensureReadPrivilege()){
+            return internshipOfferRepository.findAll(pageable).map(internshipOfferMapper::fromEntity);}
+        return internshipOfferRepository.findAllByAccepted(Boolean.TRUE, pageable)
+                .map(internshipOfferMapper::fromEntity);
     }
 
-    public InternshipOfferResponse updateInternshipOffer(UpdateInternshipOfferRequest internshipOfferRequest, String userId, String internshipOfferid) {
-        ensureUpdatePrivilege(userId);
+    public InternshipOfferResponse updateInternshipOffer(UpdateInternshipOfferRequest internshipOfferRequest,  String internshipOfferid) {
+        ensureUpdatePrivilege();
         InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferById(internshipOfferid).orElseThrow(() -> new BusinessException(ErrorCode.ResourceMissing,
                 "Internship Offer with" + internshipOfferid + " does not exist"));
         internshipOfferMapper.fromUpdateRequest(internshipOffer, internshipOfferRequest);
@@ -57,30 +60,34 @@ public class InternshipOfferService {
     }
 
 
-    private void ensureCreatePrivilege(String userId) {
-
+    private void ensureCreatePrivilege() {
         User currentUser = authenticationService.getCurrentUser();
-
-        if (!currentUser.getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.Forbidden, "You can't access this resource");
-        }
-
         if (currentUser.getUserRole() != UserRole.Firm) {
             throw new BusinessException(ErrorCode.Unauthorized, "A firm can only  create an internship offer");
         }
 
     }
 
-    private void ensureUpdatePrivilege(String userId) {
+    private void ensureUpdatePrivilege() {
 
         User currentUser = authenticationService.getCurrentUser();
-        if (!currentUser.getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.Forbidden, "You can't access this resource");
-        }
+
 
         if (currentUser.getUserRole() != UserRole.InternshipCoordinator) {
             throw new BusinessException(ErrorCode.Unauthorized, "A  internship coordinator can only edit an internship offer");
         }
 
     }
+
+    private boolean ensureReadPrivilege() {
+
+        User currentUser = authenticationService.getCurrentUser();
+
+
+        if (currentUser.getUserRole() != UserRole.InternshipCoordinator) {
+            return false ;
+        }
+        return true;
+    }
+
 }

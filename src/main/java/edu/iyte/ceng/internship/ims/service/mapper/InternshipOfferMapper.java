@@ -12,9 +12,16 @@ import org.springframework.stereotype.Service;
 public class InternshipOfferMapper {
     public InternshipOfferResponse fromEntity( InternshipOffer offer) {
         InternshipOfferResponse response = InternshipOfferResponse.builder().
-                offerId(offer.getId()).build();
+                offerId(offer.getId()).
+                title(offer.getTitle()).
+                jobTitle(offer.getJobTitle()).
+                content(offer.getContent()).
+                firmId(offer.getFirmId()).
+                build();
+
                 return response;
     }
+
     public InternshipOffer fromCreateRequest(InternshipOffer internshipOffer , CreateInternshipOfferRequest internshipOfferRequest) {
         internshipOffer.setTitle(internshipOfferRequest.getTitle());
         internshipOffer.setContent(internshipOfferRequest.getContent());
