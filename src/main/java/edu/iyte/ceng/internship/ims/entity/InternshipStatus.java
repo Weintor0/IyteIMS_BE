@@ -14,7 +14,7 @@ public enum InternshipStatus {
     CoordinatorAcceptedApplicationForm(6),
     CoordinatorRejectedApplicationForm(7),
     CoordinatorSentFormToDepartmentSecretary(8),
-    DepartmentSecretarySentFormToDeansOffice(9),
+    DepartmentSecretaryDelegatedToDeansOffice(9),
     DepartmentSecretaryUploadedEmploymentDocument(11),
     InternshipStarted(12),
     StudentSentSummerPracticeReport(13),
