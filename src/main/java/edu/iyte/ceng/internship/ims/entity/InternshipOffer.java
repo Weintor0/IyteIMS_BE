@@ -19,7 +19,10 @@ import java.util.Date;
 @Table(name = "internship_offer")
 @AllArgsConstructor
 @NoArgsConstructor
+@AssociatedWithEntity(entityName = InternshipOffer.entityName)
 public class InternshipOffer extends BaseEntity {
+    public static final String entityName = "InternshipOffer";
+
     @Column(name = "firm_id",unique = true, nullable = false)
     private String firmId ;
     @Column(name = "job_title",unique = true, nullable = false)

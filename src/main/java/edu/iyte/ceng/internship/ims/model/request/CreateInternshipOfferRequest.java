@@ -1,11 +1,14 @@
 package edu.iyte.ceng.internship.ims.model.request;
 
+import edu.iyte.ceng.internship.ims.entity.AssociatedWithEntity;
+import edu.iyte.ceng.internship.ims.entity.InternshipOffer;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
 @AllArgsConstructor
+@AssociatedWithEntity(entityName = InternshipOffer.entityName)
 public class CreateInternshipOfferRequest {
     @NotNull(message = "Job title can't be blank")
     private String jobTitle ;
