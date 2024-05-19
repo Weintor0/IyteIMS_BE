@@ -176,6 +176,11 @@ public class InternshipService {
                         "Internship with ID " + internshipId + " does not exist.")
         );
 
+        // Ensure that the letter was not evaluated before. It is not permitted to change the approval state twice.
+        if (internship.getApplicationLetterAcceptanceStatus() != AcceptanceStatus.NotEvaluated) {
+            throw new BusinessException(ErrorCode.Forbidden, "The application letter has already been evaluated");
+        }
+
         // Set the acceptance state
         boolean accepted = acceptance.getAcceptance();
         internship.setApplicationLetterAcceptanceStatus(
@@ -188,6 +193,133 @@ public class InternshipService {
                         .builder()
                         .content(firm.getFirmName() + " has " + (accepted ? "accepted" : "rejected")
                                 + " your application letter.")
+                        .build());
+    }
+
+    public void sendApplicationForm(String internshipId, MultipartFile file) throws IOException {
+        Internship internship = internshipRepository.findById(internshipId).orElseThrow(
+                () -> new BusinessException(ErrorCode.ResourceMissing,
+                        "Internship with ID " + internshipId + " does not exist.")
+        );
+
+        User user = authenticationService.getCurrentUser();
+        switch (user.getUserRole()) {
+            case Student: {
+                Student student = studentRepository.findStudentByUser(user).orElseThrow(
+                        () -> new IllegalStateException(
+                                "UserRole implies the existence of a Student, but it does not exist.")
+                );
+                sendApplicationFormByStudent(internship, student, file);
+                break;
+            }
+            case Firm: {
+                Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
+                        () -> new IllegalStateException(
+                                "UserRole implies the existence of a Firm, but it does not exist.")
+                );
+                sendApplicationFormByFirm(internship, firm, file);
+                break;
+            }
+            default:
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Only students and firms can send application forms");
+        }
+    }
+
+    private void sendApplicationFormByStudent(Internship internship, Student student, MultipartFile file) throws IOException {
+        // Ensure that the application letter was accepted by the firm.
+        if (internship.getApplicationLetterAcceptanceStatus() != AcceptanceStatus.Accepted) {
+            throw new BusinessException(ErrorCode.Forbidden,
+                    "Students cannot send application forms to firms that have rejected them.");
+        }
+
+        // Save the application form document to the database.
+        String formId = documentService.createDocument(file, internship.getInternshipOffer().getFirmId()).getDocumentId();
+        Document form = documentService.getDocument(formId);
+
+        // Send notification to the firm
+        notificationService.createNotification(internship.getInternshipOffer().getFirmId(),
+                CreateNotificationRequest
+                        .builder()
+                        .content("The student " + student.getStudentNumber() + " has sent an application form.")
+                        .build());
+
+        // Update the internship record.
+        internship.setApplicationFormByStudent(form);
+    }
+
+    private void sendApplicationFormByFirm(Internship internship, Firm firm, MultipartFile file) throws IOException {
+        // Ensure that the application form was sent by the student.
+        if (internship.getApplicationFormByStudent() == null) {
+            throw new BusinessException(ErrorCode.Forbidden,
+                    "Before a company can send the filled application form to a student, " +
+                            "the student must have sent the initial form to the firm.");
+
+        }
+
+        // Save the application form document to the database.
+        String formId = documentService.createDocument(file, internship.getStudent().getUser().getId()).getDocumentId();
+        Document form = documentService.getDocument(formId);
+
+        // Send notification to the student
+        notificationService.createNotification(internship.getStudent().getUser().getId(),
+                CreateNotificationRequest
+                        .builder()
+                        .content("The firm " + firm.getFirmName() + " has responded with a filled application form.")
+                        .build());
+
+        // Update the internship record.
+        internship.setApplicationFormByFirm(form);
+        internship.setCurrentTransactionsState(TransactionsState.InternshipCoordinator);
+    }
+
+    public void updateApplicationFormAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
+        Internship internship = internshipRepository.findById(internshipId).orElseThrow(
+                () -> new BusinessException(ErrorCode.ResourceMissing,
+                        "Internship with ID " + internshipId + " does not exist.")
+        );
+
+        User user = authenticationService.getCurrentUser();
+        if (user.getUserRole() != UserRole.InternshipCoordinator) {
+            throw new BusinessException(ErrorCode.Forbidden,
+                    "Only the internship coordinator can approve or reject an application form.");
+        }
+
+        if (internship.getApplicationFormByFirm() == null) {
+            throw new BusinessException(ErrorCode.Forbidden,
+                    "In order for the internship coordinator to be able to accept or reject an application form" +
+                            "the firm must have been responded with a filled application form.");
+        }
+
+        // Ensure that the form was not evaluated before. It is not permitted to change the approval state twice.
+        if (internship.getApplicationFormAcceptanceStatus() != AcceptanceStatus.NotEvaluated) {
+            throw new BusinessException(ErrorCode.Forbidden, "The application form has already been evaluated");
+        }
+
+        // Set the acceptance state
+        boolean accepted = acceptance.getAcceptance();
+        internship.setApplicationFormAcceptanceStatus(
+                accepted ? AcceptanceStatus.Accepted : AcceptanceStatus.Rejected
+        );
+
+        String acceptedRejectMessage = accepted ? "accepted" : "rejected";
+
+        // Send notification to the firm.
+        notificationService.createNotification(internship.getInternshipOffer().getFirmId(),
+                CreateNotificationRequest
+                        .builder()
+                        .content("The internship coordinator has " + acceptedRejectMessage
+                                + " the application form for student" +
+                                internship.getStudent().getStudentNumber())
+                        .build());
+
+        // Send notification to the student.
+        notificationService.createNotification(internship.getStudent().getUser().getId(),
+                CreateNotificationRequest
+                        .builder()
+                        .content("The internship coordinator has "+ acceptedRejectMessage
+                                + " the application form for " +
+                                internship.getInternshipOffer().getFirmId()) // TODO
                         .build());
     }
 }
