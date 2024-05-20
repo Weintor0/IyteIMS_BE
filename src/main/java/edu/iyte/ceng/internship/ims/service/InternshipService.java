@@ -5,16 +5,15 @@ import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.ErrorCode;
 import edu.iyte.ceng.internship.ims.model.request.internship.UpdateDocumentAcceptanceRequest;
 import edu.iyte.ceng.internship.ims.model.request.notification.CreateNotificationRequest;
+import edu.iyte.ceng.internship.ims.model.response.internship.InternshipResponse;
 import edu.iyte.ceng.internship.ims.model.response.internship.SendApplicationLetterResponse;
-import edu.iyte.ceng.internship.ims.repository.FirmRepository;
 import edu.iyte.ceng.internship.ims.repository.InternshipOfferRepository;
 import edu.iyte.ceng.internship.ims.repository.InternshipRepository;
-import edu.iyte.ceng.internship.ims.repository.StudentRepository;
+import edu.iyte.ceng.internship.ims.service.mapper.InternshipMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,14 +24,14 @@ public class InternshipService {
     private final NotificationService notificationService;
     private final DocumentService documentService;
     private final AuthenticationService authenticationService;
-
+    private final UserService userService;
+    private final InternshipMapper internshipMapper;
     private final InternshipOfferRepository internshipOfferRepository;
 
-    public Internship getInternshipById(String id) {
+    Internship getInternshipByIdInternal(String id) {
         Internship internship = internshipRepository.findById(id).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Internship with id " + id + " does not exist.")
         );
-
         authenticationService.doIfUserIsStudent((student) -> {
             if (!student.getUserId().equals(internship.getStudentId())) {
                 throw new BusinessException(ErrorCode.Forbidden,
@@ -46,7 +45,7 @@ public class InternshipService {
         }).doIfUserIsDepartmentSecretary((secretary) -> {
             int order = internship.getStatus().getOrder();
             int ssiBegin = InternshipStatus.CoordinatorSentFormToDepartmentSecretary.getOrder();
-            int ssiEnd = InternshipStatus.DepartmentSecretaryUploadedEmploymentDocument.getOrder();
+            int ssiEnd = InternshipStatus.InternshipStarted.getOrder();
             if ((order < ssiBegin || order > ssiEnd) && internship.getEmploymentDocument() == null) {
                 throw new BusinessException(ErrorCode.Unauthorized,
                         "The department secretary is only responsible with internships requiring insurance");
@@ -56,7 +55,7 @@ public class InternshipService {
         return internship;
     }
 
-    public List<Internship> getInternships() {
+    List<Internship> getInternshipsInternal() {
         List<Internship> internships = new ArrayList<>();
         authenticationService.doIfUserIsStudent(
                 (student) -> {
@@ -78,6 +77,19 @@ public class InternshipService {
                 }
         );
         return internships;
+    }
+
+    public InternshipResponse getInternshipById(String internshipId) {
+        Internship internship = getInternshipByIdInternal(internshipId);
+        return internshipMapper.fromInternship(internship);
+    }
+
+    public List<InternshipResponse> getInternships() {
+        List<InternshipResponse> responses = new ArrayList<>();
+        for (Internship internship : getInternshipsInternal()) {
+            responses.add(internshipMapper.fromInternship(internship));
+        }
+        return responses;
     }
 
     public SendApplicationLetterResponse sendApplicationLetter(String offerId, MultipartFile file) {
@@ -109,7 +121,7 @@ public class InternshipService {
     public void updateApplicationLetterAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
         authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
             // Get the internship record.
-            Internship internship = getInternshipById(internshipId);
+            Internship internship = getInternshipByIdInternal(internshipId);
 
             // Ensure that the letter was not evaluated before. It is not permitted to change the approval state twice.
             if (internship.getStatus() != InternshipStatus.StudentSentApplicationLetter) {
@@ -121,6 +133,7 @@ public class InternshipService {
             internship.setStatus(accepted ?
                     InternshipStatus.FirmAcceptedApplicationLetter :
                     InternshipStatus.FirmRejectedApplicationLetter);
+            internshipRepository.save(internship);
 
             // Send notification to the student.
             notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest
@@ -132,12 +145,12 @@ public class InternshipService {
     }
 
     public Document getApplicationLetter(String internshipId) {
-        Internship internship = getInternshipById(internshipId);
+        Internship internship = getInternshipByIdInternal(internshipId);
         return internship.getApplicationLetter();
     }
 
-    public void sendApplicationForm(String internshipId, MultipartFile file) throws IOException {
-        Internship internship = getInternshipById(internshipId);
+    public void sendApplicationForm(String internshipId, MultipartFile file) {
+        Internship internship = getInternshipByIdInternal(internshipId);
 
         authenticationService.doIfUserIsStudent((student) -> {
             sendApplicationFormByStudent(internship, student, file);
@@ -194,11 +207,16 @@ public class InternshipService {
         // Send notification to the student
         notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
                 .content("The firm " + firm.getFirmName() + " has responded with a filled application form.").build());
+
+        // Send notification to the internship coordinator
+        User internshipCoordinator = userService.getUsersByUserRole(UserRole.InternshipCoordinator).get(0);
+        notificationService.createNotification(internshipCoordinator.getId(), CreateNotificationRequest.builder()
+                .content("The firm " + firm.getFirmName() + " has filled an application form.").build());
     }
 
     public void updateApplicationFormAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
         authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((user) -> {
-            Internship internship = getInternshipById(internshipId);
+            Internship internship = getInternshipByIdInternal(internshipId);
             if (internship.getStatus() != InternshipStatus.FirmSentApplicationForm) {
                 throw new BusinessException(ErrorCode.Forbidden,
                         "In order for the internship coordinator to be able to accept or reject an application form" +
@@ -208,6 +226,7 @@ public class InternshipService {
             boolean accepted = acceptance.getAcceptance();
             internship.setStatus(accepted ? InternshipStatus.CoordinatorAcceptedApplicationForm :
                                             InternshipStatus.CoordinatorRejectedApplicationForm);
+            internshipRepository.save(internship);
 
             String acceptedStr = accepted ? "accepted" : "rejected";
             // Send notification to the firm.
@@ -225,7 +244,7 @@ public class InternshipService {
     }
 
     public Document getApplicationFormByStudent(String internshipId) {
-        Internship internship = getInternshipById(internshipId);
+        Internship internship = getInternshipByIdInternal(internshipId);
         if (internship.getStatus().getOrder() < InternshipStatus.StudentSentApplicationForm.getOrder()) {
             throw new BusinessException(ErrorCode.ResourceMissing, "Student has not sent any application forms.");
         }
@@ -233,7 +252,7 @@ public class InternshipService {
     }
 
     public Document getApplicationFormByFirm(String internshipId) {
-        Internship internship = getInternshipById(internshipId);
+        Internship internship = getInternshipByIdInternal(internshipId);
         if (internship.getStatus().getOrder() < InternshipStatus.FirmSentApplicationForm.getOrder()) {
             throw new BusinessException(ErrorCode.ResourceMissing, "Firm has not sent any application forms.");
         }
@@ -241,39 +260,63 @@ public class InternshipService {
     }
 
     public void setNoInsurance(String internshipId) {
-        Internship internship = getInternshipById(internshipId);
-        if (internship.getStatus() != InternshipStatus.CoordinatorAcceptedApplicationForm) {
-            throw new BusinessException(ErrorCode.Forbidden,
-                    "Unnecessity of insurance cannot be recorded without first approving the application form.");
-        }
-        internship.setStatus(InternshipStatus.InternshipStarted);
-        internshipRepository.save(internship);
+        authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus() != InternshipStatus.CoordinatorAcceptedApplicationForm) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Unnecessity of insurance cannot be recorded without first approving the application form.");
+            }
+            internship.setStatus(InternshipStatus.InternshipStarted);
+            internshipRepository.save(internship);
+
+            // Send notification to the student.
+            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+                    .content("Your internship has formally started").build());
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only the internship coordinator is allowed set record that no insurance is required."));
     }
 
     public void setHandlerToDepartmentSecretary(String internshipId) {
-        Internship internship = getInternshipById(internshipId);
-        if (internship.getStatus() != InternshipStatus.CoordinatorAcceptedApplicationForm) {
-            throw new BusinessException(ErrorCode.Forbidden, "Handler cannot be set to department secretary " +
-                    "without first approving the application form.");
-        }
-        internship.setStatus(InternshipStatus.CoordinatorSentFormToDepartmentSecretary);
-        internshipRepository.save(internship);
+        authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus() != InternshipStatus.CoordinatorAcceptedApplicationForm) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Handler cannot be set to department secretary without first approving the application form.");
+            }
+            internship.setStatus(InternshipStatus.CoordinatorSentFormToDepartmentSecretary);
+            internshipRepository.save(internship);
+
+            // Send notification to department secretary
+            User departmentSecretary = userService.getUsersByUserRole(UserRole.DepartmentSecretary).get(0);
+            notificationService.createNotification(departmentSecretary.getId(), CreateNotificationRequest.builder()
+                    .content("The internship coordinator has delegated an application form.").build());
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only the internship coordinator is allowed to delegate SSI transactions to the Department Secretary"));
     }
 
-    public void setHandlerToDeans(String internshipId) {
-        Internship internship = getInternshipById(internshipId);
-        if (internship.getStatus() != InternshipStatus.CoordinatorSentFormToDepartmentSecretary) {
-            throw new BusinessException(ErrorCode.Forbidden, "Handler cannot be set to dean's office " +
-                    "without first receiving permission to process the application form " +
-                    "from the internship coordinator");
-        }
-        internship.setStatus(InternshipStatus.DepartmentSecretaryDelegatedToDeansOffice);
-        internshipRepository.save(internship);
+    public void setHandlerToDeansOffice(String internshipId) {
+        authenticationService.doIfUserIsDepartmentSecretaryOrElseThrow((secretary) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus() != InternshipStatus.CoordinatorSentFormToDepartmentSecretary) {
+                throw new BusinessException(ErrorCode.Forbidden, "Handler cannot be set to dean's office " +
+                        "without first receiving permission to process the application form " +
+                        "from the internship coordinator");
+            }
+            internship.setStatus(InternshipStatus.DepartmentSecretaryDelegatedToDeansOffice);
+            internshipRepository.save(internship);
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only the department secretary is allowed to delegate SSI transactions to the Dean's Office."));
     }
 
     public void sendEmploymentDocument(String internshipId, MultipartFile file) {
         authenticationService.doIfUserIsDepartmentSecretaryOrElseThrow((user) -> {
-            Internship internship = getInternshipById(internshipId);
+            Internship internship = getInternshipByIdInternal(internshipId);
             if (internship.getStatus() != InternshipStatus.DepartmentSecretaryDelegatedToDeansOffice) {
                 throw new BusinessException(ErrorCode.Forbidden,
                         "The department secretary can upload the employment document only if the transactions" +
@@ -281,19 +324,168 @@ public class InternshipService {
             }
 
             // Save the application form document to the database.
-            String documentIdId = documentService.createDocument(file, internship.getStudentId()).getDocumentId();
+            String documentId = documentService.createDocument(file, internship.getStudentId()).getDocumentId();
 
             // Update the internship record.
-            internship.setEmploymentDocument(documentService.getDocument(documentIdId));
+            internship.setEmploymentDocument(documentService.getDocument(documentId));
             internship.setStatus(InternshipStatus.InternshipStarted);
             internshipRepository.save(internship);
 
             // Send notification to the student
             notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
-                            .content("The Department Secretary has uploaded your employment document.").build());
+                            .content("The Department Secretary has uploaded your employment document. " +
+                                    "Your internship has formally started.").build());
 
             return null;
         }, () -> new BusinessException(ErrorCode.Forbidden,
                 "Only the department secretary can upload employment documents."));
+    }
+
+    public Document getEmploymentDocument(String internshipId) {
+        Internship internship = getInternshipByIdInternal(internshipId);
+        if (internship.getStatus().getOrder() < InternshipStatus.InternshipStarted.getOrder()) {
+            throw new BusinessException(ErrorCode.ResourceMissing,
+                    "No employment document has been uploaded by the department secretary");
+        }
+        return internship.getEmploymentDocument();
+    }
+
+    public void sendSummerPracticeReport(String internshipId, MultipartFile file) {
+        authenticationService.doIfUserIsStudentOrElseThrow((student) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            boolean internshipStarted = internship.getStatus() == InternshipStatus.InternshipStarted;
+            boolean firmRequestedModification = internship.getStatus() == InternshipStatus.FirmRejectedReport;
+            if (!(internshipStarted || firmRequestedModification)) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Cannot send a summer practice report before the internship formally starts," +
+                        "or before the firm requests a modification.");
+            }
+
+            // Save the summer practice report document to the database.
+            String documentId = documentService.createDocument(file, internship.getFirmId()).getDocumentId();
+
+            // Update the internship record.
+            internship.setSummerPracticeReport(documentService.getDocument(documentId));
+            internship.setStatus(InternshipStatus.StudentSentSummerPracticeReport);
+            internshipRepository.save(internship);
+
+            // Send notification to the firm
+            notificationService.createNotification(internship.getFirmId(), CreateNotificationRequest.builder()
+                    .content("The student with number " + internship.getStudent().getStudentNumber()
+                            + " has uploaded summer practice report").build());
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only students can upload summer practice reports"));
+    }
+
+    public void updateSummerPracticeReportAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
+        authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus() != InternshipStatus.StudentSentSummerPracticeReport) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Cannot approve or reject a report before it is sent by the student.");
+            }
+
+            boolean accepted = acceptance.getAcceptance();
+            internship.setStatus(accepted ? InternshipStatus.FirmAcceptedReport :
+                                            InternshipStatus.FirmRejectedReport);
+            internshipRepository.save(internship);
+
+            // Send notification to the student.
+            String acceptedStr = accepted ? "accepted" : "rejected";
+            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+                    .content("The firm has "+ acceptedStr + " your summer practice report form for "
+                            + "\n\n" + acceptance.getFeedback()).build());
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only companies can approve or reject summer practice reports"));
+    }
+
+    public Document getSummerPracticeReport(String internshipId) {
+        Internship internship = getInternshipByIdInternal(internshipId);
+        if (internship.getStatus().getOrder() < InternshipStatus.StudentSentSummerPracticeReport.getOrder()) {
+            throw new BusinessException(ErrorCode.ResourceMissing,
+                    "No summer practice report has been uploaded by the student.");
+        }
+        return internship.getSummerPracticeReport();
+    }
+
+    public void sendCompanyForm(String internshipId, MultipartFile companyForm) {
+        authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            boolean firmAcceptedReport = internship.getStatus() == InternshipStatus.FirmAcceptedReport;
+            boolean firmRejectedReport = internship.getStatus() == InternshipStatus.FirmRejectedReport;
+            if (!(firmAcceptedReport || firmRejectedReport)) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Cannot send a company form before accepting or rejecting the student's report.");
+            }
+
+            // Save the summer practice report document to the database.
+            User internshipCoordinator = userService.getUsersByUserRole(UserRole.InternshipCoordinator).get(0);
+            String documentId = documentService.createDocument(companyForm, internshipCoordinator.getId()).getDocumentId();
+
+            // Update internship record
+            internship.setCompanyForm(documentService.getDocument(documentId));
+            internship.setStatus(InternshipStatus.FirmSentCompanyForm);
+            internshipRepository.save(internship);
+
+            // Send notification to the internship coordinator
+            notificationService.createNotification(internshipCoordinator.getId(), CreateNotificationRequest.builder()
+                    .content("The firm " + firm.getFirmName() + " has sent a company form.").build());
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only companies can send company forms"));
+    }
+
+    public Document getCompanyForm(String internshipId) {
+        return authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus().getOrder() < InternshipStatus.FirmSentCompanyForm.getOrder()) {
+                throw new BusinessException(ErrorCode.ResourceMissing,
+                        "No company form has been uploaded by the student.");
+            }
+            return internship.getCompanyForm();
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only internship coordinator can download company forms"));
+    }
+
+    public void sendSurvey(String internshipId, MultipartFile survey) {
+        authenticationService.doIfUserIsStudentOrElseThrow((student) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus() != InternshipStatus.FirmSentCompanyForm) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "Students can send the survey only after the firm has sent the company form");
+            }
+
+            // Save the survey to the database.
+            User internshipCoordinator = userService.getUsersByUserRole(UserRole.InternshipCoordinator).get(0);
+            String documentId = documentService.createDocument(survey, internshipCoordinator.getId()).getDocumentId();
+
+            // Update internship record
+            internship.setCompanyForm(documentService.getDocument(documentId));
+            internship.setStatus(InternshipStatus.StudentSentSurvey);
+            internshipRepository.save(internship);
+
+            // Send notification to the internship coordinator
+            notificationService.createNotification(internshipCoordinator.getId(), CreateNotificationRequest.builder()
+                    .content("The student " + student.getStudentNumber() + " has sent a survey.").build());
+
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden, "Only students can send surveys"));
+    }
+
+    public Document getSurvey(String internshipId) {
+        return authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
+            Internship internship = getInternshipByIdInternal(internshipId);
+            if (internship.getStatus().getOrder() < InternshipStatus.StudentSentSurvey.getOrder()) {
+                throw new BusinessException(ErrorCode.ResourceMissing,
+                        "No survey has been uploaded by the student.");
+            }
+            return internship.getSurvey();
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only internship coordinator can download surveys"));
     }
 }
