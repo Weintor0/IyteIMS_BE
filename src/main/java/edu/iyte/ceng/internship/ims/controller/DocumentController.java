@@ -15,20 +15,12 @@ import java.io.IOException;
 @RequestMapping("/document")
 public class DocumentController {
     private final DocumentService documentService;
+    private final DownloadHelper downloadHelper;
 
     @GetMapping(path = "/download/{documentId}")
     public HttpEntity<byte[]> download(@PathVariable("documentId") String documentId) {
         Document document = documentService.getDocument(documentId);
-
-        String name = document.getName();
-        byte[] contents = document.getContent();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + name);
-        headers.setContentLength(contents.length);
-
-        return new HttpEntity<>(contents, headers);
+        return downloadHelper.fromDocument(document);
     }
 
     @PostMapping(path = "/upload/{receivingUserId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
