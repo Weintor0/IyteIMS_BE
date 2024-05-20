@@ -110,7 +110,7 @@ public class InternshipService {
                             .build());
 
             // Send notification to the firm
-            notificationService.createNotification(internshipOffer.getFirmId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internshipOffer.getFirmId(), CreateNotificationRequest.builder()
                             .content("The student " + student.getStudentNumber() + " has sent an application letter.")
                             .build());
 
@@ -136,7 +136,7 @@ public class InternshipService {
             internshipRepository.save(internship);
 
             // Send notification to the student.
-            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest
+            notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest
                             .builder().content(firm.getFirmName() + " has " + (accepted ? "accepted" : "rejected")
                                     + " your application letter.").build());
 
@@ -183,7 +183,7 @@ public class InternshipService {
         internship.setStatus(InternshipStatus.StudentSentApplicationForm);
 
         // Send notification to the firm
-        notificationService.createNotification(internship.getFirmId(), CreateNotificationRequest.builder()
+        notificationService.createNotificationInternal(internship.getFirmId(), CreateNotificationRequest.builder()
                 .content("The student " + student.getStudentNumber() + " has sent an application form.").build());
     }
 
@@ -205,12 +205,12 @@ public class InternshipService {
         internship.setStatus(InternshipStatus.FirmSentApplicationForm);
 
         // Send notification to the student
-        notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+        notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest.builder()
                 .content("The firm " + firm.getFirmName() + " has responded with a filled application form.").build());
 
         // Send notification to the internship coordinator
         User internshipCoordinator = userService.getUsersByUserRole(UserRole.InternshipCoordinator).get(0);
-        notificationService.createNotification(internshipCoordinator.getId(), CreateNotificationRequest.builder()
+        notificationService.createNotificationInternal(internshipCoordinator.getId(), CreateNotificationRequest.builder()
                 .content("The firm " + firm.getFirmName() + " has filled an application form.").build());
     }
 
@@ -230,11 +230,11 @@ public class InternshipService {
 
             String acceptedStr = accepted ? "accepted" : "rejected";
             // Send notification to the firm.
-            notificationService.createNotification(internship.getFirmId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internship.getFirmId(), CreateNotificationRequest.builder()
                     .content("The internship coordinator has " + acceptedStr + " the application form for student" +
                             internship.getStudent().getStudentNumber() + "\n\n" + acceptance.getFeedback()).build());
             // Send notification to the student.
-            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest.builder()
                     .content("The internship coordinator has "+ acceptedStr + " the application form for " +
                             internship.getInternshipOffer().getFirmId() + "\n\n" + acceptance.getFeedback()).build());
 
@@ -270,7 +270,7 @@ public class InternshipService {
             internshipRepository.save(internship);
 
             // Send notification to the student.
-            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest.builder()
                     .content("Your internship has formally started").build());
 
             return null;
@@ -290,7 +290,7 @@ public class InternshipService {
 
             // Send notification to department secretary
             User departmentSecretary = userService.getUsersByUserRole(UserRole.DepartmentSecretary).get(0);
-            notificationService.createNotification(departmentSecretary.getId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(departmentSecretary.getId(), CreateNotificationRequest.builder()
                     .content("The internship coordinator has delegated an application form.").build());
 
             return null;
@@ -332,7 +332,7 @@ public class InternshipService {
             internshipRepository.save(internship);
 
             // Send notification to the student
-            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest.builder()
                             .content("The Department Secretary has uploaded your employment document. " +
                                     "Your internship has formally started.").build());
 
@@ -370,7 +370,7 @@ public class InternshipService {
             internshipRepository.save(internship);
 
             // Send notification to the firm
-            notificationService.createNotification(internship.getFirmId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internship.getFirmId(), CreateNotificationRequest.builder()
                     .content("The student with number " + internship.getStudent().getStudentNumber()
                             + " has uploaded summer practice report").build());
 
@@ -394,7 +394,7 @@ public class InternshipService {
 
             // Send notification to the student.
             String acceptedStr = accepted ? "accepted" : "rejected";
-            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest.builder()
                     .content("The firm has "+ acceptedStr + " your summer practice report form for "
                             + "\n\n" + acceptance.getFeedback()).build());
 
@@ -432,7 +432,7 @@ public class InternshipService {
             internshipRepository.save(internship);
 
             // Send notification to the internship coordinator
-            notificationService.createNotification(internshipCoordinator.getId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internshipCoordinator.getId(), CreateNotificationRequest.builder()
                     .content("The firm " + firm.getFirmName() + " has sent a company form.").build());
 
             return null;
@@ -470,7 +470,7 @@ public class InternshipService {
             internshipRepository.save(internship);
 
             // Send notification to the internship coordinator
-            notificationService.createNotification(internshipCoordinator.getId(), CreateNotificationRequest.builder()
+            notificationService.createNotificationInternal(internshipCoordinator.getId(), CreateNotificationRequest.builder()
                     .content("The student " + student.getStudentNumber() + " has sent a survey.").build());
 
             return null;

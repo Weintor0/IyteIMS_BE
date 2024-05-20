@@ -9,7 +9,6 @@ import edu.iyte.ceng.internship.ims.model.request.notification.CreateNotificatio
 import edu.iyte.ceng.internship.ims.model.response.notifications.NotificationResponse;
 import edu.iyte.ceng.internship.ims.repository.NotificationRepository;
 import edu.iyte.ceng.internship.ims.service.mapper.NotificationMapper;
-import edu.iyte.ceng.internship.ims.util.DateUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -23,9 +22,10 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserService userService;
     private final NotificationMapper notificationMapper;
+    private final AuthenticationService authenticationService;
 
     public List<NotificationResponse> getNotifications() {
-        User currentUser = userService.getUserById(SecurityContextHolder.getContext().getAuthentication().getName()); // TODO
+        User currentUser = authenticationService.getCurrentUser();
         List<NotificationResponse> notificationList = new ArrayList<>();
         for (Notification notification : notificationRepository.findNotificationByDestinationUser(currentUser)) {
             notificationList.add(notificationMapper.fromEntity(notification));
@@ -34,7 +34,7 @@ public class NotificationService {
     }
 
     public void markAsRead(String notificationId) {
-        User currentUser = userService.getUserById(SecurityContextHolder.getContext().getAuthentication().getName()); // TODO
+        User currentUser = authenticationService.getCurrentUser();
 
         Notification notification = notificationRepository.findById(notificationId).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Notification not found.")
@@ -49,16 +49,22 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    @Deprecated
     public NotificationResponse createNotification(String destinationUserId, CreateNotificationRequest request) {
-        User currentUser = userService.getUserById(SecurityContextHolder.getContext().getAuthentication().getName()); // TODO
+        User currentUser = authenticationService.getCurrentUser();
         if (currentUser.getUserRole() != UserRole.InternshipCoordinator) {
             throw new BusinessException(ErrorCode.Unauthorized,
                     "Only the internship coordinator is allowed to send arbitrary notifications.");
         }
 
+        Notification notification = createNotificationInternal(destinationUserId, request);
+        return notificationMapper.fromEntity(notification);
+    }
+
+    Notification createNotificationInternal(String destinationUserId, CreateNotificationRequest request) {
+        User currentUser = authenticationService.getCurrentUser();
         User destinationUser = userService.getUserById(destinationUserId);
         Notification notification = notificationMapper.fromRequest(request, currentUser, destinationUser);
-        notificationRepository.save(notification);
-        return notificationMapper.fromEntity(notification);
+        return notificationRepository.save(notification);
     }
 }

@@ -1,6 +1,5 @@
 package edu.iyte.ceng.internship.ims.controller;
 
-import edu.iyte.ceng.internship.ims.entity.Notification;
 import edu.iyte.ceng.internship.ims.model.request.notification.CreateNotificationRequest;
 import edu.iyte.ceng.internship.ims.model.response.notifications.NotificationResponse;
 import edu.iyte.ceng.internship.ims.service.NotificationService;
