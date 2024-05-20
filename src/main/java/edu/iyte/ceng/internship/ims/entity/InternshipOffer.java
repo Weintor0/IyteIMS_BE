@@ -20,10 +20,13 @@ import java.util.Date;
 @AllArgsConstructor
 @NoArgsConstructor
 public class InternshipOffer extends BaseEntity {
+    @Column(name = "firm_id",unique = true, nullable = false)
     private String firmId ;
+    @Column(name = "job_title",unique = true, nullable = false)
     private String jobTitle ;
     private String title;
     private String content ;
+
     private Boolean accepted ;
     @Column(name = "created", nullable = false, updatable = false)
     @CreatedDate
