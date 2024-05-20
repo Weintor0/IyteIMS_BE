@@ -15,6 +15,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -24,6 +25,7 @@ public class AnnouncementService {
     private final AuthenticationService authenticationService;
     private final AnnouncementMapper announcementMapper;
     private final AnnouncementRepository announcementRepository;
+
     public AnnouncementResponse createAnnouncement(AnnouncementRequest announcementRequest) {
         ensureCreateandUpdatePrivilege();
         Announcement announcement = new Announcement();
@@ -38,6 +40,7 @@ public class AnnouncementService {
 
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public AnnouncementResponse updateAnnouncement(AnnouncementRequest announcementRequest , String id) {
         ensureCreateandUpdatePrivilege();
         Announcement announcement = announcementRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorCode.ResourceMissing,

@@ -12,6 +12,7 @@ import edu.iyte.ceng.internship.ims.service.mapper.NotificationMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,7 @@ public class NotificationService {
     private final NotificationMapper notificationMapper;
     private final AuthenticationService authenticationService;
 
+    @Transactional(rollbackFor = Throwable.class)
     public List<NotificationResponse> getNotifications() {
         User currentUser = authenticationService.getCurrentUser();
         List<NotificationResponse> notificationList = new ArrayList<>();
@@ -33,6 +35,7 @@ public class NotificationService {
         return notificationList;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void markAsRead(String notificationId) {
         User currentUser = authenticationService.getCurrentUser();
 
@@ -49,6 +52,7 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     @Deprecated
     public NotificationResponse createNotification(String destinationUserId, CreateNotificationRequest request) {
         User currentUser = authenticationService.getCurrentUser();
@@ -61,6 +65,7 @@ public class NotificationService {
         return notificationMapper.fromEntity(notification);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     Notification createNotificationInternal(String destinationUserId, CreateNotificationRequest request) {
         User currentUser = authenticationService.getCurrentUser();
         User destinationUser = userService.getUserById(destinationUserId);

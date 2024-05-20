@@ -14,6 +14,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -34,6 +35,7 @@ public class InternshipOfferService {
         return internshipOfferMapper.fromEntity(internshipOffer);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public InternshipOfferResponse createInternshipOffer(CreateInternshipOfferRequest internshipOfferRequest) {
         ensureCreatePrivilege();
         InternshipOffer internshipOffer = new InternshipOffer();
@@ -49,6 +51,7 @@ public class InternshipOfferService {
                 .map(internshipOfferMapper::fromEntity);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public InternshipOfferResponse updateInternshipOffer(UpdateInternshipOfferRequest internshipOfferRequest,  String internshipOfferid) {
         ensureUpdatePrivilege();
         InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferById(internshipOfferid).orElseThrow(() -> new BusinessException(ErrorCode.ResourceMissing,

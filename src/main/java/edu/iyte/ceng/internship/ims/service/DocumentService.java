@@ -11,6 +11,7 @@ import edu.iyte.ceng.internship.ims.util.DateUtil;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -20,9 +21,11 @@ import java.io.IOException;
 public class DocumentService {
     private final DocumentRepository documentRepository;
     private final UserService userService;
+    private final AuthenticationService authenticationService;
 
+    @Transactional(rollbackFor = Throwable.class)
     public CreateDocumentResponse createDocument(MultipartFile file, String receiverUserId) {
-        User sourceUser = userService.getUserById(SecurityContextHolder.getContext().getAuthentication().getName());
+        User sourceUser = authenticationService.getCurrentUser();
         User destinationUser = userService.getUserById(receiverUserId);
 
         byte[] content = null;
@@ -44,6 +47,7 @@ public class DocumentService {
         return new CreateDocumentResponse(savedDocument.getId());
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getDocument(String documentId) {
         Document document = documentRepository.findById(documentId).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Document not found")
@@ -52,6 +56,7 @@ public class DocumentService {
         return document;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void updateDocument(String documentId, MultipartFile file) {
         Document document = documentRepository.findById(documentId).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Document not found")
@@ -70,6 +75,7 @@ public class DocumentService {
         documentRepository.save(document);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void deleteDocument(String documentId) {
         Document document = documentRepository.findById(documentId).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Document not found")
@@ -79,7 +85,7 @@ public class DocumentService {
     }
 
     private void ensureReadPrivilege(Document document) {
-        String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
+        String currentUserId = authenticationService.getCurrentUser().getId();
 
         if (document.getSourceUser().getId().equals(currentUserId)) {
             return; // OK. Users can download a document if they are the sender.

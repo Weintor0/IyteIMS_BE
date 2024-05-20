@@ -12,6 +12,7 @@ import edu.iyte.ceng.internship.ims.repository.InternshipRepository;
 import edu.iyte.ceng.internship.ims.service.mapper.InternshipMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ public class InternshipService {
     private final InternshipMapper internshipMapper;
     private final InternshipOfferRepository internshipOfferRepository;
 
+    @Transactional(rollbackFor = Throwable.class)
     Internship getInternshipByIdInternal(String id) {
         Internship internship = internshipRepository.findById(id).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Internship with id " + id + " does not exist.")
@@ -55,6 +57,7 @@ public class InternshipService {
         return internship;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     List<Internship> getInternshipsInternal() {
         List<Internship> internships = new ArrayList<>();
         authenticationService.doIfUserIsStudent(
@@ -79,11 +82,13 @@ public class InternshipService {
         return internships;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public InternshipResponse getInternshipById(String internshipId) {
         Internship internship = getInternshipByIdInternal(internshipId);
         return internshipMapper.fromInternship(internship);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public List<InternshipResponse> getInternships() {
         List<InternshipResponse> responses = new ArrayList<>();
         for (Internship internship : getInternshipsInternal()) {
@@ -92,6 +97,7 @@ public class InternshipService {
         return responses;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public SendApplicationLetterResponse sendApplicationLetter(String offerId, MultipartFile file) {
         return authenticationService.doIfUserIsStudentOrElseThrow((student) -> {
             InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferById(offerId).orElseThrow(
@@ -118,6 +124,7 @@ public class InternshipService {
         }, () -> new BusinessException(ErrorCode.Forbidden, "Only students can send application letters"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void updateApplicationLetterAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
         authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
             // Get the internship record.
@@ -144,11 +151,13 @@ public class InternshipService {
         }, () -> new BusinessException(ErrorCode.Forbidden, "Only firms can evaluate application letters"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getApplicationLetter(String internshipId) {
         Internship internship = getInternshipByIdInternal(internshipId);
         return internship.getApplicationLetter();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void sendApplicationForm(String internshipId, MultipartFile file) {
         Internship internship = getInternshipByIdInternal(internshipId);
 
@@ -165,6 +174,7 @@ public class InternshipService {
         internshipRepository.save(internship);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     private void sendApplicationFormByStudent(Internship internship, Student student, MultipartFile file) {
         // Ensure that the internship is in a state in which an application form can be set by the student
         boolean receivedApprovalForLetter = internship.getStatus() == InternshipStatus.FirmAcceptedApplicationLetter;
@@ -187,6 +197,7 @@ public class InternshipService {
                 .content("The student " + student.getStudentNumber() + " has sent an application form.").build());
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     private void sendApplicationFormByFirm(Internship internship, Firm firm, MultipartFile file) {
         // Ensure that the student has sent an application form, or the coordinator requested change.
         boolean studentSentForm = internship.getStatus() == InternshipStatus.StudentSentApplicationForm;
@@ -214,6 +225,7 @@ public class InternshipService {
                 .content("The firm " + firm.getFirmName() + " has filled an application form.").build());
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void updateApplicationFormAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
         authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((user) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -243,6 +255,7 @@ public class InternshipService {
                 ErrorCode.Forbidden, "Only the internship coordinator can approve or reject an application form."));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getApplicationFormByStudent(String internshipId) {
         Internship internship = getInternshipByIdInternal(internshipId);
         if (internship.getStatus().getOrder() < InternshipStatus.StudentSentApplicationForm.getOrder()) {
@@ -251,6 +264,7 @@ public class InternshipService {
         return internship.getApplicationFormByStudent();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getApplicationFormByFirm(String internshipId) {
         Internship internship = getInternshipByIdInternal(internshipId);
         if (internship.getStatus().getOrder() < InternshipStatus.FirmSentApplicationForm.getOrder()) {
@@ -259,6 +273,7 @@ public class InternshipService {
         return internship.getApplicationFormByFirm();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void setNoInsurance(String internshipId) {
         authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -278,6 +293,7 @@ public class InternshipService {
                 "Only the internship coordinator is allowed set record that no insurance is required."));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void setHandlerToDepartmentSecretary(String internshipId) {
         authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -298,6 +314,7 @@ public class InternshipService {
                 "Only the internship coordinator is allowed to delegate SSI transactions to the Department Secretary"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void setHandlerToDeansOffice(String internshipId) {
         authenticationService.doIfUserIsDepartmentSecretaryOrElseThrow((secretary) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -314,6 +331,7 @@ public class InternshipService {
                 "Only the department secretary is allowed to delegate SSI transactions to the Dean's Office."));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void sendEmploymentDocument(String internshipId, MultipartFile file) {
         authenticationService.doIfUserIsDepartmentSecretaryOrElseThrow((user) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -341,6 +359,7 @@ public class InternshipService {
                 "Only the department secretary can upload employment documents."));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getEmploymentDocument(String internshipId) {
         Internship internship = getInternshipByIdInternal(internshipId);
         if (internship.getStatus().getOrder() < InternshipStatus.InternshipStarted.getOrder()) {
@@ -350,6 +369,7 @@ public class InternshipService {
         return internship.getEmploymentDocument();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void sendSummerPracticeReport(String internshipId, MultipartFile file) {
         authenticationService.doIfUserIsStudentOrElseThrow((student) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -379,6 +399,7 @@ public class InternshipService {
                 "Only students can upload summer practice reports"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void updateSummerPracticeReportAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
         authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -403,6 +424,7 @@ public class InternshipService {
                 "Only companies can approve or reject summer practice reports"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getSummerPracticeReport(String internshipId) {
         Internship internship = getInternshipByIdInternal(internshipId);
         if (internship.getStatus().getOrder() < InternshipStatus.StudentSentSummerPracticeReport.getOrder()) {
@@ -412,6 +434,7 @@ public class InternshipService {
         return internship.getSummerPracticeReport();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void sendCompanyForm(String internshipId, MultipartFile companyForm) {
         authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -440,6 +463,7 @@ public class InternshipService {
                 "Only companies can send company forms"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getCompanyForm(String internshipId) {
         return authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -452,6 +476,7 @@ public class InternshipService {
                 "Only internship coordinator can download company forms"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void sendSurvey(String internshipId, MultipartFile survey) {
         authenticationService.doIfUserIsStudentOrElseThrow((student) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
@@ -477,6 +502,7 @@ public class InternshipService {
         }, () -> new BusinessException(ErrorCode.Forbidden, "Only students can send surveys"));
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public Document getSurvey(String internshipId) {
         return authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((coordinator) -> {
             Internship internship = getInternshipByIdInternal(internshipId);
