@@ -44,4 +44,8 @@ public class Student extends BaseEntity {
     @NotBlank
     @Column(name = "surname")
     private String surname;
+
+    public String getUserId() {
+        return user.getId();
+    }
 }

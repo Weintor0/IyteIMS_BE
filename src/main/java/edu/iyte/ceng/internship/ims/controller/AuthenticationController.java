@@ -22,8 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/auth")
 public class AuthenticationController {
     private AuthenticationService authenticationService;
-    private StudentService studentService;
-    private FirmService firmService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest loginRequest) {
@@ -34,7 +32,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/firm")
-    public ResponseEntity<LoginResponse> createFirm(@Valid @RequestBody FirmRegisterRequest firmRegisterRequest) {
+    public ResponseEntity<LoginResponse> registerFirm(@Valid @RequestBody FirmRegisterRequest firmRegisterRequest) {
         authenticationService.registerFirm(firmRegisterRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(firmRegisterRequest.getEmail(), firmRegisterRequest.getPassword()));
@@ -44,8 +42,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/student")
-    public ResponseEntity<LoginResponse> createStudent(@Valid @RequestBody StudentRegisterRequest createRequest) {
-        studentService.createStudent(createRequest);
+    public ResponseEntity<LoginResponse> registerStudent(@Valid @RequestBody StudentRegisterRequest createRequest) {
+        authenticationService.registerStudent(createRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));
         HttpHeaders headers = new HttpHeaders();

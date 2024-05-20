@@ -12,6 +12,8 @@ import edu.iyte.ceng.internship.ims.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
 
+import java.util.List;
+
 @Service
 @AllArgsConstructor
 public class UserService {
@@ -35,6 +37,10 @@ public class UserService {
         return userRepository.findUserByEmail(email).orElseThrow(
             () -> new BusinessException(ErrorCode.AccountMissing, email)
         );
+    }
+
+    public List<User> getUsersByUserRole(UserRole role) {
+        return userRepository.findByUserRole(role);
     }
 
     public User updateUser(String userId, String email, String password) {

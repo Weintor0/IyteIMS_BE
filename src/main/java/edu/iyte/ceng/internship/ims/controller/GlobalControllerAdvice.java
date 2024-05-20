@@ -64,6 +64,10 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
             // Get entity name
             AssociatedWithEntity awe = clazz.getAnnotation(AssociatedWithEntity.class);
+
+            // Skip the class if it is not annotated with @AssociatedWithEntity
+            if (awe == null) { continue; }
+
             String entityName = awe.entityName();
 
             // Map each column name in the database to the corresponding attribute name in the entity class.
@@ -96,6 +100,11 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
                     errors.add(error);
                 }
             }
+        }
+
+        if (errors.isEmpty()) {
+            throw new IllegalStateException("An error has occurred, but the server was unable to identify the cause. " +
+                                            "Report the incident to the developers.");
         }
 
         ErrorModel response = new ErrorModel(errors);
