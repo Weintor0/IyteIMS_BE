@@ -34,7 +34,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/firm")
-    public ResponseEntity<LoginResponse> createFirm(@Valid @RequestBody FirmRegisterRequest firmRegisterRequest) {
+    public ResponseEntity<LoginResponse> registerFirm(@Valid @RequestBody FirmRegisterRequest firmRegisterRequest) {
         authenticationService.registerFirm(firmRegisterRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(firmRegisterRequest.getEmail(), firmRegisterRequest.getPassword()));
@@ -44,7 +44,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/register/student")
-    public ResponseEntity<LoginResponse> createStudent(@Valid @RequestBody StudentRegisterRequest createRequest) {
+    public ResponseEntity<LoginResponse> registerStudent(@Valid @RequestBody StudentRegisterRequest createRequest) {
         authenticationService.registerStudent(createRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));

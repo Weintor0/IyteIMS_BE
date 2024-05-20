@@ -37,12 +37,10 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    private final UserRepository userRepository;
     private final FirmRepository firmRepository;
     private final FirmMapper firmMapper;
     private final StudentRepository studentRepository;
     private final StudentMapper studentMapper;
-    private final UserService user;
 
     public LoginResponse login(LoginRequest loginRequest) {
         User user = userService.getUserByEmail(loginRequest.getEmail());
@@ -79,7 +77,7 @@ public class AuthenticationService {
     }
 
     public User getCurrentUser() {
-        return user.getUserById(SecurityContextHolder.getContext().getAuthentication().getName());
+        return userService.getUserById(SecurityContextHolder.getContext().getAuthentication().getName());
     }
 
     public AuthenticationService doIfUserIsStudent(Consumer<Student> consumer) {
