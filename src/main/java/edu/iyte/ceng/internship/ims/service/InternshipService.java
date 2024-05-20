@@ -66,7 +66,7 @@ public class InternshipService {
                 }
         ).doIfUserIsFirm(
                 (firm) -> {
-                    internshipRepository.findByInternshipOffer_FirmId(firm.getUserId());
+                    internships.addAll(internshipRepository.findByInternshipOffer_FirmId(firm.getUserId()));
                 }
         ).doIfUserIsDepartmentSecretary(
                 (secretary) -> {
