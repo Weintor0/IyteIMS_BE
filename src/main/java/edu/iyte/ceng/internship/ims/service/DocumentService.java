@@ -4,6 +4,7 @@ import edu.iyte.ceng.internship.ims.entity.Document;
 import edu.iyte.ceng.internship.ims.entity.User;
 import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.ErrorCode;
+import edu.iyte.ceng.internship.ims.exception.FileException;
 import edu.iyte.ceng.internship.ims.model.response.documents.CreateDocumentResponse;
 import edu.iyte.ceng.internship.ims.repository.DocumentRepository;
 import edu.iyte.ceng.internship.ims.util.DateUtil;
@@ -20,16 +21,23 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
     private final UserService userService;
 
-    public CreateDocumentResponse createDocument(MultipartFile file, String receiverUserId) throws IOException {
+    public CreateDocumentResponse createDocument(MultipartFile file, String receiverUserId) {
         User sourceUser = userService.getUserById(SecurityContextHolder.getContext().getAuthentication().getName());
         User destinationUser = userService.getUserById(receiverUserId);
+
+        byte[] content = null;
+        try {
+            content = file.getBytes();
+        } catch (IOException e) {
+            throw new FileException(e);
+        }
 
         Document document = Document.builder()
                 .sourceUser(sourceUser)
                 .destinationUser(destinationUser)
                 .uploadDate(DateUtil.asDate(DateUtil.now()))
                 .name(file.getOriginalFilename())
-                .content(file.getBytes())
+                .content(content)
                 .build();
 
         Document savedDocument = documentRepository.save(document);
@@ -44,14 +52,20 @@ public class DocumentService {
         return document;
     }
 
-    public void updateDocument(String documentId, MultipartFile file) throws IOException {
+    public void updateDocument(String documentId, MultipartFile file) {
         Document document = documentRepository.findById(documentId).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Document not found")
         );
         ensureWritePrivilege(document);
 
+        try {
+            byte[] content = file.getBytes();
+            document.setContent(content);
+        } catch (IOException e) {
+            throw new FileException(e);
+        }
+
         document.setName(file.getOriginalFilename());
-        document.setContent(file.getBytes());
         document.setUploadDate(DateUtil.asDate(DateUtil.now()));
         documentRepository.save(document);
     }

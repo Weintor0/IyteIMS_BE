@@ -26,8 +26,6 @@ public class InternshipService {
     private final DocumentService documentService;
     private final AuthenticationService authenticationService;
 
-    private final StudentRepository studentRepository;
-    private final FirmRepository firmRepository;
     private final InternshipOfferRepository internshipOfferRepository;
 
     public Internship getInternshipById(String id) {
@@ -35,304 +33,195 @@ public class InternshipService {
                 () -> new BusinessException(ErrorCode.ResourceMissing, "Internship with id " + id + " does not exist.")
         );
 
-        User user = authenticationService.getCurrentUser();
-        switch (user.getUserRole()) {
-            case Student: {
-                Student student = studentRepository.findStudentByUser(user).orElseThrow(
-                        () -> new IllegalStateException("UserRole implies a Student record, but it does not exist.")
-                );
-                if (!student.getId().equals(internship.getStudent().getId())) {
-                    throw new BusinessException(ErrorCode.Forbidden,
-                            "A student cannot access another student's internship information.");
-                }
-                break;
+        authenticationService.doIfUserIsStudent((student) -> {
+            if (!student.getUserId().equals(internship.getStudentId())) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "A student cannot access another student's internship information.");
             }
-            case Firm: {
-                Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
-                        () -> new IllegalStateException("UserRole implies a Firm record, but it does not exist.")
-                );
-                if (!firm.getId().equals(internship.getInternshipOffer().getFirmId())) {
-                    throw new BusinessException(ErrorCode.Forbidden,
-                            "A firm cannot access an internship record of another company.");
-                }
-                break;
+        }).doIfUserIsFirm((firm) -> {
+            if (!firm.getUserId().equals(internship.getFirmId())) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "A firm cannot access an internship record of another company.");
             }
-            case DepartmentSecretary: {
-                InternshipStatus state = internship.getStatus();
-                // Either the internship is within SSI transactions or has completed the transactions (an employment document exists)
-                // Otherwise it is not department secretary's responsibility.
-                if ((state.getOrder() >= InternshipStatus.CoordinatorSentFormToDepartmentSecretary.getOrder() &&
-                    state.getOrder() <= InternshipStatus.DepartmentSecretaryUploadedEmploymentDocument.getOrder()) ||
-                    internship.getEmploymentDocument() != null) {
-                    break;
-                }
-
+        }).doIfUserIsDepartmentSecretary((secretary) -> {
+            int order = internship.getStatus().getOrder();
+            int ssiBegin = InternshipStatus.CoordinatorSentFormToDepartmentSecretary.getOrder();
+            int ssiEnd = InternshipStatus.DepartmentSecretaryUploadedEmploymentDocument.getOrder();
+            if ((order < ssiBegin || order > ssiEnd) && internship.getEmploymentDocument() == null) {
                 throw new BusinessException(ErrorCode.Unauthorized,
                         "The department secretary is only responsible with internships requiring insurance");
             }
-            case InternshipCoordinator:
-                break;
-        }
+        });
 
         return internship;
     }
 
     public List<Internship> getInternships() {
-        User user = authenticationService.getCurrentUser();
-        switch (user.getUserRole()) {
-            case Student: {
-                Student student = studentRepository.findStudentByUser(user).orElseThrow(
-                        () -> new IllegalStateException("UserRole implies a Student record, but it does not exist.")
-                );
-                return internshipRepository.findByStudent(student);
-            }
-
-            case Firm: {
-                Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
-                        () -> new IllegalStateException("UserRole implies a Firm record, but it does not exist.")
-                );
-                return internshipRepository.findByInternshipOffer_FirmId(firm.getId());
-            }
-
-            case InternshipCoordinator: {
-                return internshipRepository.findAll();
-            }
-
-            case DepartmentSecretary: {
-                List<Internship> internships = new ArrayList<>();
-                internships.addAll(internshipRepository.findByStatus(
-                        InternshipStatus.CoordinatorSentFormToDepartmentSecretary));
-                internships.addAll(internshipRepository.findByStatus(
-                        InternshipStatus.DepartmentSecretaryUploadedEmploymentDocument));
-                internships.addAll(internshipRepository.findByEmploymentDocumentIsNotNull());
-                return internships;
-            }
-
-            default:
-                throw new IllegalStateException("Unknown user attempted to request an internship record.");
-        }
+        List<Internship> internships = new ArrayList<>();
+        authenticationService.doIfUserIsStudent(
+                (student) -> {
+                    internships.addAll(internshipRepository.findByStudent(student));
+                }
+        ).doIfUserIsFirm(
+                (firm) -> {
+                    internshipRepository.findByInternshipOffer_FirmId(firm.getUserId());
+                }
+        ).doIfUserIsDepartmentSecretary(
+                (secretary) -> {
+                    internships.addAll(internshipRepository.findByStatus(InternshipStatus.CoordinatorSentFormToDepartmentSecretary));
+                    internships.addAll(internshipRepository.findByStatus(InternshipStatus.DepartmentSecretaryDelegatedToDeansOffice));
+                    internships.addAll(internshipRepository.findByEmploymentDocumentIsNotNull());
+                }
+        ).doIfUserIsInternshipCoordinator(
+                (coordinator) -> {
+                    internships.addAll(internshipRepository.findAll());
+                }
+        );
+        return internships;
     }
 
-    public SendApplicationLetterResponse sendApplicationLetter(String offerId, MultipartFile file) throws IOException {
-        User user = authenticationService.getCurrentUser();
+    public SendApplicationLetterResponse sendApplicationLetter(String offerId, MultipartFile file) {
+        return authenticationService.doIfUserIsStudentOrElseThrow((student) -> {
+            InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferById(offerId).orElseThrow(
+                    () -> new BusinessException(ErrorCode.ResourceMissing,
+                            "Internship offer with ID " + offerId + " does not exist"));
 
-        // Ensure that the user is a student
-        if (user.getUserRole() != UserRole.Student) {
-            throw new BusinessException(ErrorCode.Forbidden, "Only students can send application letters");
-        }
+            // Create and save the application letter in the database.
+            String letterId = documentService.createDocument(file, internshipOffer.getFirmId()).getDocumentId();
 
-        // Get the Student record.
-        Student student = studentRepository.findStudentByUser(user).orElseThrow(
-                () -> new IllegalStateException("UserRole implies the existence of a Student, but it does not exist.")
-        );
+            // Create and save the internship record in the database.
+            Internship internship = internshipRepository.save(Internship.builder()
+                            .status(InternshipStatus.StudentSentApplicationLetter)
+                            .student(student)
+                            .internshipOffer(internshipOffer)
+                            .applicationLetter(documentService.getDocument(letterId))
+                            .build());
 
-        // Get the InternshipOffer record.
-        InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferById(offerId).orElseThrow(
-                () -> new BusinessException(ErrorCode.ResourceMissing,
-                        "Internship offer with ID " + offerId + " does not exist")
-        );
+            // Send notification to the firm
+            notificationService.createNotification(internshipOffer.getFirmId(), CreateNotificationRequest.builder()
+                            .content("The student " + student.getStudentNumber() + " has sent an application letter.")
+                            .build());
 
-        // Save the application letter document to the database.
-        String letterId = documentService.createDocument(file, internshipOffer.getFirmId()).getDocumentId();
-        Document letter = documentService.getDocument(letterId);
-
-        // Create and save the internship record in the database.
-        Internship internship = internshipRepository.save(
-                Internship.builder()
-                          .status(InternshipStatus.StudentSentApplicationLetter)
-                          .student(student)
-                          .internshipOffer(internshipOffer)
-                          .applicationLetter(letter)
-                          .build()
-        );
-
-        // Send notification to the firm
-        notificationService.createNotification(internshipOffer.getFirmId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content("The student " + student.getStudentNumber() + " has sent an application letter.")
-                        .build());
-
-        // Return the Internship ID.
-        return new SendApplicationLetterResponse(internship.getId());
+            return new SendApplicationLetterResponse(internship.getId());
+        }, () -> new BusinessException(ErrorCode.Forbidden, "Only students can send application letters"));
     }
 
     public void updateApplicationLetterAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
-        User user = authenticationService.getCurrentUser();
+        authenticationService.doIfUserIsFirmOrElseThrow((firm) -> {
+            // Get the internship record.
+            Internship internship = getInternshipById(internshipId);
 
-        // Ensure that the user is a Firm.
-        if (user.getUserRole() != UserRole.Firm) {
-            throw new BusinessException(ErrorCode.Forbidden, "Only firms can evaluate application letters");
-        }
+            // Ensure that the letter was not evaluated before. It is not permitted to change the approval state twice.
+            if (internship.getStatus() != InternshipStatus.StudentSentApplicationLetter) {
+                throw new BusinessException(ErrorCode.Forbidden, "The application letter has already been evaluated");
+            }
 
-        // Get the Firm record.
-        Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
-                () -> new IllegalStateException("UserRole implies the existence of a Firm, but it does not exist.")
-        );
+            // Set the acceptance state
+            boolean accepted = acceptance.getAcceptance();
+            internship.setStatus(accepted ?
+                    InternshipStatus.FirmAcceptedApplicationLetter :
+                    InternshipStatus.FirmRejectedApplicationLetter);
 
-        // Get the internship record.
-        Internship internship = getInternshipById(internshipId);
+            // Send notification to the student.
+            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest
+                            .builder().content(firm.getFirmName() + " has " + (accepted ? "accepted" : "rejected")
+                                    + " your application letter.").build());
 
-        // Ensure that the letter was not evaluated before. It is not permitted to change the approval state twice.
-        if (internship.getStatus() != InternshipStatus.StudentSentApplicationLetter) {
-            throw new BusinessException(ErrorCode.Forbidden, "The application letter has already been evaluated");
-        }
-
-        // Set the acceptance state
-        boolean accepted = acceptance.getAcceptance();
-        if (accepted) {
-            internship.setStatus(InternshipStatus.FirmAcceptedApplicationLetter);
-        } else {
-            internship.setStatus(InternshipStatus.FirmRejectedApplicationLetter);
-        }
-
-        // Send notification to the student.
-        notificationService.createNotification(internship.getStudent().getUser().getId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content(firm.getFirmName() + " has " + (accepted ? "accepted" : "rejected")
-                                + " your application letter.")
-                        .build());
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden, "Only firms can evaluate application letters"));
     }
 
     public Document getApplicationLetter(String internshipId) {
         Internship internship = getInternshipById(internshipId);
-        Document letter = internship.getApplicationLetter();
-        return letter;
+        return internship.getApplicationLetter();
     }
 
     public void sendApplicationForm(String internshipId, MultipartFile file) throws IOException {
-        Internship internship = internshipRepository.findById(internshipId).orElseThrow(
-                () -> new BusinessException(ErrorCode.ResourceMissing,
-                        "Internship with ID " + internshipId + " does not exist.")
-        );
+        Internship internship = getInternshipById(internshipId);
 
-        User user = authenticationService.getCurrentUser();
-        switch (user.getUserRole()) {
-            case Student: {
-                Student student = studentRepository.findStudentByUser(user).orElseThrow(
-                        () -> new IllegalStateException(
-                                "UserRole implies the existence of a Student, but it does not exist.")
-                );
-                sendApplicationFormByStudent(internship, student, file);
-                break;
-            }
-            case Firm: {
-                Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
-                        () -> new IllegalStateException(
-                                "UserRole implies the existence of a Firm, but it does not exist.")
-                );
-                sendApplicationFormByFirm(internship, firm, file);
-                break;
-            }
-            default:
-                throw new BusinessException(ErrorCode.Forbidden,
-                        "Only students and firms can send application forms");
-        }
+        authenticationService.doIfUserIsStudent((student) -> {
+            sendApplicationFormByStudent(internship, student, file);
+        }).doIfUserIsFirm((firm) -> {
+            sendApplicationFormByFirm(internship, firm, file);
+        }).doIfUserIsInternshipCoordinator((user) -> {
+            throw new BusinessException(ErrorCode.Forbidden, "Internship coordinator cannot send an application form.");
+        }).doIfUserIsDepartmentSecretary((user) -> {
+            throw new BusinessException(ErrorCode.Forbidden, "Department secretary cannot send  an application form.");
+        });
 
         internshipRepository.save(internship);
     }
 
-    private void sendApplicationFormByStudent(Internship internship, Student student, MultipartFile file) throws IOException {
+    private void sendApplicationFormByStudent(Internship internship, Student student, MultipartFile file) {
         // Ensure that the internship is in a state in which an application form can be set by the student
         boolean receivedApprovalForLetter = internship.getStatus() == InternshipStatus.FirmAcceptedApplicationLetter;
         boolean coordinatorRequestedChangeInForm = internship.getStatus() == InternshipStatus.CoordinatorRejectedApplicationForm;
         if (!(receivedApprovalForLetter || coordinatorRequestedChangeInForm)) {
             throw new BusinessException(ErrorCode.Forbidden,
                     "A student can only send an application form if her letter was recently accepted, or the" +
-                            "coordinator had requested a modification in the previously sent application form");
+                    "coordinator had requested a modification in the previously sent application form");
         }
 
         // Save the application form document to the database.
-        String formId = documentService.createDocument(file, internship.getInternshipOffer().getFirmId()).getDocumentId();
-        Document form = documentService.getDocument(formId);
-
-        // Send notification to the firm
-        notificationService.createNotification(internship.getInternshipOffer().getFirmId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content("The student " + student.getStudentNumber() + " has sent an application form.")
-                        .build());
+        String formId = documentService.createDocument(file, internship.getFirmId()).getDocumentId();
 
         // Update the internship record.
-        internship.setApplicationFormByStudent(form);
+        internship.setApplicationFormByStudent(documentService.getDocument(formId));
         internship.setStatus(InternshipStatus.StudentSentApplicationForm);
+
+        // Send notification to the firm
+        notificationService.createNotification(internship.getFirmId(), CreateNotificationRequest.builder()
+                .content("The student " + student.getStudentNumber() + " has sent an application form.").build());
     }
 
-    private void sendApplicationFormByFirm(Internship internship, Firm firm, MultipartFile file) throws IOException {
+    private void sendApplicationFormByFirm(Internship internship, Firm firm, MultipartFile file) {
         // Ensure that the student has sent an application form, or the coordinator requested change.
         boolean studentSentForm = internship.getStatus() == InternshipStatus.StudentSentApplicationForm;
         boolean coordinatorRequestedChangeInForm = internship.getStatus() == InternshipStatus.CoordinatorRejectedApplicationForm;
         if (!(studentSentForm || coordinatorRequestedChangeInForm)) {
             throw new BusinessException(ErrorCode.Forbidden,
-                    "Before a company can send the filled application form to a student, " +
-                            "the student must have sent the form to the firm, or the coordinator must have requested change" +
-                            "in a previous form.");
-
+                    "Before a company can send the filled application form to a student, the student must have sent " +
+                    "the form to the firm, or the coordinator must have requested change in a previous form.");
         }
 
         // Save the application form document to the database.
-        String formId = documentService.createDocument(file, internship.getStudent().getUser().getId()).getDocumentId();
-        Document form = documentService.getDocument(formId);
-
-        // Send notification to the student
-        notificationService.createNotification(internship.getStudent().getUser().getId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content("The firm " + firm.getFirmName() + " has responded with a filled application form.")
-                        .build());
+        String formId = documentService.createDocument(file, internship.getStudentId()).getDocumentId();
 
         // Update the internship record.
-        internship.setApplicationFormByFirm(form);
+        internship.setApplicationFormByFirm(documentService.getDocument(formId));
         internship.setStatus(InternshipStatus.FirmSentApplicationForm);
+
+        // Send notification to the student
+        notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+                .content("The firm " + firm.getFirmName() + " has responded with a filled application form.").build());
     }
 
     public void updateApplicationFormAcceptance(String internshipId, UpdateDocumentAcceptanceRequest acceptance) {
-        Internship internship = internshipRepository.findById(internshipId).orElseThrow(
-                () -> new BusinessException(ErrorCode.ResourceMissing,
-                        "Internship with ID " + internshipId + " does not exist.")
-        );
+        authenticationService.doIfUserIsInternshipCoordinatorOrElseThrow((user) -> {
+            Internship internship = getInternshipById(internshipId);
+            if (internship.getStatus() != InternshipStatus.FirmSentApplicationForm) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "In order for the internship coordinator to be able to accept or reject an application form" +
+                        "the firm must have responded with a filled application form.");
+            }
 
-        User user = authenticationService.getCurrentUser();
-        if (user.getUserRole() != UserRole.InternshipCoordinator) {
-            throw new BusinessException(ErrorCode.Forbidden,
-                    "Only the internship coordinator can approve or reject an application form.");
-        }
+            boolean accepted = acceptance.getAcceptance();
+            internship.setStatus(accepted ? InternshipStatus.CoordinatorAcceptedApplicationForm :
+                                            InternshipStatus.CoordinatorRejectedApplicationForm);
 
-        if (internship.getStatus() != InternshipStatus.FirmSentApplicationForm) {
-            throw new BusinessException(ErrorCode.Forbidden,
-                    "In order for the internship coordinator to be able to accept or reject an application form" +
-                            "the firm must have been responded with a filled application form.");
-        }
+            String acceptedStr = accepted ? "accepted" : "rejected";
+            // Send notification to the firm.
+            notificationService.createNotification(internship.getFirmId(), CreateNotificationRequest.builder()
+                    .content("The internship coordinator has " + acceptedStr + " the application form for student" +
+                            internship.getStudent().getStudentNumber() + "\n\n" + acceptance.getFeedback()).build());
+            // Send notification to the student.
+            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+                    .content("The internship coordinator has "+ acceptedStr + " the application form for " +
+                            internship.getInternshipOffer().getFirmId() + "\n\n" + acceptance.getFeedback()).build());
 
-        // Set the acceptance state
-        boolean accepted = acceptance.getAcceptance();
-        if (accepted) {
-            internship.setStatus(InternshipStatus.CoordinatorAcceptedApplicationForm);
-        } else {
-            internship.setStatus(InternshipStatus.CoordinatorRejectedApplicationForm);
-        }
-
-        String acceptedRejectMessage = accepted ? "accepted" : "rejected";
-        String feedback = acceptance.getFeedback() == null ? "" : "Feedback: " + acceptance.getFeedback();
-
-        // Send notification to the firm.
-        notificationService.createNotification(internship.getInternshipOffer().getFirmId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content("The internship coordinator has " + acceptedRejectMessage
-                                + " the application form for student" +
-                                internship.getStudent().getStudentNumber() + "\n" + feedback)
-                        .build());
-
-        // Send notification to the student.
-        notificationService.createNotification(internship.getStudent().getUser().getId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content("The internship coordinator has "+ acceptedRejectMessage
-                                + " the application form for " +
-                                internship.getInternshipOffer().getFirmId() + "\n" + feedback) // TODO
-                        .build());
+            return null;
+        }, () -> new BusinessException(
+                ErrorCode.Forbidden, "Only the internship coordinator can approve or reject an application form."));
     }
 
     public Document getApplicationFormByStudent(String internshipId) {
@@ -354,8 +243,8 @@ public class InternshipService {
     public void setNoInsurance(String internshipId) {
         Internship internship = getInternshipById(internshipId);
         if (internship.getStatus() != InternshipStatus.CoordinatorAcceptedApplicationForm) {
-            throw new BusinessException(ErrorCode.Forbidden, "Unnecessity of insurance cannot be recorded " +
-                    "without first approving the application form.");
+            throw new BusinessException(ErrorCode.Forbidden,
+                    "Unnecessity of insurance cannot be recorded without first approving the application form.");
         }
         internship.setStatus(InternshipStatus.InternshipStarted);
         internshipRepository.save(internship);
@@ -382,38 +271,29 @@ public class InternshipService {
         internshipRepository.save(internship);
     }
 
-    public void sendEmploymentDocument(String internshipId, MultipartFile file) throws IOException {
-        User user = authenticationService.getCurrentUser();
-        if (user.getUserRole() != UserRole.InternshipCoordinator) {
-            throw new BusinessException(ErrorCode.Forbidden,
-                    "Only the department secretary can upload employment documents.");
-        }
+    public void sendEmploymentDocument(String internshipId, MultipartFile file) {
+        authenticationService.doIfUserIsDepartmentSecretaryOrElseThrow((user) -> {
+            Internship internship = getInternshipById(internshipId);
+            if (internship.getStatus() != InternshipStatus.DepartmentSecretaryDelegatedToDeansOffice) {
+                throw new BusinessException(ErrorCode.Forbidden,
+                        "The department secretary can upload the employment document only if the transactions" +
+                        "were delegated to the Dean's office, and are now complete.");
+            }
 
-        Internship internship = internshipRepository.findById(internshipId).orElseThrow(
-                () -> new BusinessException(ErrorCode.ResourceMissing,
-                        "Internship with ID " + internshipId + " does not exist.")
-        );
+            // Save the application form document to the database.
+            String documentIdId = documentService.createDocument(file, internship.getStudentId()).getDocumentId();
 
-        if (internship.getStatus() != InternshipStatus.DepartmentSecretaryDelegatedToDeansOffice) {
-            throw new BusinessException(ErrorCode.Forbidden,
-                    "The department secretary can upload the employment document only if the transactions" +
-                            "were delegated to the Dean's office, and are now complete.");
-        }
+            // Update the internship record.
+            internship.setEmploymentDocument(documentService.getDocument(documentIdId));
+            internship.setStatus(InternshipStatus.InternshipStarted);
+            internshipRepository.save(internship);
 
-        // Save the application form document to the database.
-        String employmentDocumentId = documentService.createDocument(file, internship.getStudent().getUser().getId()).getDocumentId();
-        Document employmentDocument = documentService.getDocument(employmentDocumentId);
+            // Send notification to the student
+            notificationService.createNotification(internship.getStudentId(), CreateNotificationRequest.builder()
+                            .content("The Department Secretary has uploaded your employment document.").build());
 
-        // Send notification to the student
-        notificationService.createNotification(internship.getStudent().getUser().getId(),
-                CreateNotificationRequest
-                        .builder()
-                        .content("The Department Secretary has uploaded your employment document.")
-                        .build());
-
-        // Update the internship record.
-        internship.setEmploymentDocument(employmentDocument);
-        internship.setStatus(InternshipStatus.InternshipStarted);
-        internshipRepository.save(internship);
+            return null;
+        }, () -> new BusinessException(ErrorCode.Forbidden,
+                "Only the department secretary can upload employment documents."));
     }
 }

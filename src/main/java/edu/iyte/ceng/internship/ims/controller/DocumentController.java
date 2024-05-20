@@ -32,17 +32,15 @@ public class DocumentController {
     }
 
     @PostMapping(path = "/upload/{receivingUserId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<CreateDocumentResponse> upload(
-            @PathVariable("receivingUserId") String receivingUserId,
-            @RequestPart("file") MultipartFile file) throws IOException {
+    public ResponseEntity<CreateDocumentResponse> upload(@PathVariable("receivingUserId") String receivingUserId,
+            @RequestPart("file") MultipartFile file) {
         CreateDocumentResponse response = documentService.createDocument(file, receivingUserId);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping(path = "/update/{documentId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<HttpStatus> update(
-            @PathVariable("documentId") String documentId,
-            @RequestPart("file") MultipartFile file) throws IOException {
+    public ResponseEntity<HttpStatus> update(@PathVariable("documentId") String documentId,
+            @RequestPart("file") MultipartFile file) {
         documentService.updateDocument(documentId, file);
         return new ResponseEntity<>(HttpStatus.OK);
     }
