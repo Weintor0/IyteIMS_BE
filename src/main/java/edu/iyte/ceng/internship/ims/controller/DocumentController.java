@@ -10,9 +10,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
+@Deprecated(forRemoval = true)
 @AllArgsConstructor
-@RestController
-@RequestMapping("/document")
+/**
+    DocumentController is disabled.
+    Sending arbitrary documents to arbitrary people is no longer allowed.
+
+    //@RestController
+    //@RequestMapping("/document")
+*/
 public class DocumentController {
     private final DocumentService documentService;
     private final DownloadHelper downloadHelper;
