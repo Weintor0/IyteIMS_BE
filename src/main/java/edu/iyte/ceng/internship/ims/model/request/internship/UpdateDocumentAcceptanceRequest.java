@@ -8,6 +8,6 @@ public class UpdateDocumentAcceptanceRequest {
     @NotNull
     private Boolean acceptance;
 
-    // Feedback is optional
+    @NotNull
     private String feedback;
 }

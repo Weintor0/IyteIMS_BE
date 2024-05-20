@@ -52,4 +52,12 @@ public class Internship extends BaseEntity {
    @ManyToOne
    @JoinColumn(name = "survey", referencedColumnName = "id")
    private Document survey;
+
+   public String getStudentId() {
+      return student.getUserId();
+   }
+
+   public String getFirmId() {
+      return internshipOffer.getFirmId();
+   }
 }

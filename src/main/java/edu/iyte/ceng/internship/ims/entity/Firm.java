@@ -61,4 +61,8 @@ public class Firm extends BaseEntity {
     @NotBlank
     @Column(name = "address")
     private String address;
+
+    public String getUserId() {
+        return user.getId();
+    }
 }

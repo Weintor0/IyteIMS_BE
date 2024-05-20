@@ -45,7 +45,7 @@ public class AuthenticationController {
 
     @PostMapping("/register/student")
     public ResponseEntity<LoginResponse> createStudent(@Valid @RequestBody StudentRegisterRequest createRequest) {
-        studentService.createStudent(createRequest);
+        authenticationService.registerStudent(createRequest);
         LoginResponse loginResponse = authenticationService.login(
                 new LoginRequest(createRequest.getEmail(), createRequest.getPassword()));
         HttpHeaders headers = new HttpHeaders();
