@@ -53,7 +53,7 @@ public class InternshipController {
     @PatchMapping(path = "/application-letter/evaluate/{internshipId}")
     public ResponseEntity<HttpStatus> updateApplicationLetterAcceptance(
             @PathVariable("internshipId") String internshipId,
-            UpdateDocumentAcceptanceRequest request) {
+            @RequestBody UpdateDocumentAcceptanceRequest request) {
         internshipService.updateApplicationLetterAcceptance(internshipId, request);
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -71,7 +71,7 @@ public class InternshipController {
     @PatchMapping(path = "/application-form/evaluate/{internshipId}")
     public ResponseEntity<HttpStatus> updateApplicationFormAcceptance(
             @PathVariable("internshipId") String internshipId,
-            UpdateDocumentAcceptanceRequest request) {
+            @RequestBody UpdateDocumentAcceptanceRequest request) {
         internshipService.updateApplicationFormAcceptance(internshipId, request);
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -140,7 +140,7 @@ public class InternshipController {
     @PatchMapping(path = "/report/evaluate/{internshipId}")
     public ResponseEntity<HttpStatus> updateSummerPracticeReportAcceptance(
             @PathVariable("internshipId") String internshipId,
-            UpdateDocumentAcceptanceRequest request) {
+            @RequestBody UpdateDocumentAcceptanceRequest request) {
         internshipService.updateSummerPracticeReportAcceptance(internshipId, request);
         return new ResponseEntity<>(HttpStatus.OK);
     }

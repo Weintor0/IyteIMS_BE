@@ -87,10 +87,14 @@ public class InternshipOfferService {
         User currentUser = authenticationService.getCurrentUser();
 
 
-        if (currentUser.getUserRole() != UserRole.InternshipCoordinator) {
-            return false ;
+        if (currentUser.getUserRole() == UserRole.InternshipCoordinator) {
+            return true ;
         }
-        return true;
-    }
 
+        if (currentUser.getUserRole() == UserRole.Firm) {
+            return true;
+        }
+
+        return false;
+    }
 }

@@ -23,9 +23,9 @@ import java.util.Date;
 public class InternshipOffer extends BaseEntity {
     public static final String entityName = "InternshipOffer";
 
-    @Column(name = "firm_id",unique = true, nullable = false)
+    @Column(name = "firm_id", nullable = false)
     private String firmId ;
-    @Column(name = "job_title",unique = true, nullable = false)
+    @Column(name = "job_title", nullable = false)
     private String jobTitle ;
     private String title;
     private String content ;
