@@ -23,7 +23,6 @@ public class FirmService {
     private FirmMapper firmMapper;
     private AuthenticationService authenticationService;
 
-
     public FirmResponse getFirm(String userId) {
         User user = userService.getUserById(userId);
         Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
