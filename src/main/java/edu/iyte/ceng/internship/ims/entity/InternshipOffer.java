@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -24,10 +26,17 @@ public class InternshipOffer extends BaseEntity {
     public static final String entityName = "InternshipOffer";
 
     @Column(name = "firm_id", nullable = false)
+    @NotNull
     private String firmId ;
     @Column(name = "job_title", nullable = false)
+    @Size(max = 50)
+    @NotNull
     private String jobTitle ;
+    @Size(max = 50)
+    @NotNull
     private String title;
+    @Size(max = 400)
+    @NotNull
     private String content ;
 
     private Boolean accepted ;
