@@ -28,6 +28,7 @@ public class InternshipService {
     private final UserService userService;
     private final InternshipMapper internshipMapper;
     private final InternshipOfferRepository internshipOfferRepository;
+    private final FirmService firmService;
 
     @Transactional(rollbackFor = Throwable.class)
     Internship getInternshipByIdInternal(String id) {
@@ -243,12 +244,12 @@ public class InternshipService {
             String acceptedStr = accepted ? "accepted" : "rejected";
             // Send notification to the firm.
             notificationService.createNotificationInternal(internship.getFirmId(), CreateNotificationRequest.builder()
-                    .content("The internship coordinator has " + acceptedStr + " the application form for student" +
+                    .content("The internship coordinator has " + acceptedStr + " the application form for student " +
                             internship.getStudent().getStudentNumber() + "\n\n" + acceptance.getFeedback()).build());
             // Send notification to the student.
             notificationService.createNotificationInternal(internship.getStudentId(), CreateNotificationRequest.builder()
                     .content("The internship coordinator has "+ acceptedStr + " the application form for " +
-                            internship.getInternshipOffer().getFirmId() + "\n\n" + acceptance.getFeedback()).build());
+                            firmService.getFirmPublicInformation(internship.getFirmId()).getFirmName() + "\n\n" + acceptance.getFeedback()).build());
 
             return null;
         }, () -> new BusinessException(

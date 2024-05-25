@@ -62,9 +62,16 @@ public class FirmService {
     }
 
     private void ensureReadPrivilege(String userId) {
-        User currentUser = authenticationService.getCurrentUser();
-        if (!currentUser.getId().equals(userId)) {
-            throw new BusinessException(ErrorCode.Forbidden, "A firm can only read its own account information");
-        }
+        authenticationService.doIfUserIsStudent((student -> {
+            throw new BusinessException(ErrorCode.Forbidden, "Students cannot read firms' account information.");}));
+
+        authenticationService.doIfUserIsDepartmentSecretary((secretary -> {
+            throw new BusinessException(ErrorCode.Forbidden, "Department secretary cannot read firms' account information.");}));
+
+        authenticationService.doIfUserIsFirm((firm -> {
+            if (!firm.getUserId().equals(userId)) {
+                throw new BusinessException(ErrorCode.Forbidden, "A firm can only read its own account information");
+            }
+        }));
     }
 }
