@@ -31,4 +31,8 @@ public class InternshipOfferController {
     public InternshipOfferResponse updateInternship(@Valid @RequestBody UpdateInternshipOfferRequest internshipOffer, @PathVariable("offerId")String offerId){
         return internshipOfferService.updateInternshipOffer(internshipOffer, offerId);
     }
+    @GetMapping("/get/{id}")
+    public InternshipOfferResponse getInternshipOffer(@PathVariable("id") String offerId){
+        return internshipOfferService.getInternshipOffer(offerId);
+    }
 }

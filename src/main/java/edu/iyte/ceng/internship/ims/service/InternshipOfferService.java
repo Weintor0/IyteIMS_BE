@@ -27,10 +27,10 @@ public class InternshipOfferService {
     private final InternshipOfferMapper internshipOfferMapper;
 
 
-    public InternshipOfferResponse getInternshipOffer(String title) {
-        InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferByTitle(title).orElseThrow(
+    public InternshipOfferResponse getInternshipOffer(String id) {
+        InternshipOffer internshipOffer = internshipOfferRepository.findInternshipOfferById(id).orElseThrow(
                 () -> new BusinessException(ErrorCode.ResourceMissing,
-                        "Internship Offer with" + title + " does not exist")
+                        "Internship Offer with" + id+ " does not exist")
         );
         return internshipOfferMapper.fromEntity(internshipOffer);
     }
