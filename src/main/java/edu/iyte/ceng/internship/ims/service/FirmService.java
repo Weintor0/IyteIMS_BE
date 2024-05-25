@@ -6,6 +6,7 @@ import edu.iyte.ceng.internship.ims.exception.BusinessException;
 import edu.iyte.ceng.internship.ims.exception.ErrorCode;
 import edu.iyte.ceng.internship.ims.model.request.users.UpdateFirmRequest;
 import edu.iyte.ceng.internship.ims.model.response.users.FirmResponse;
+import edu.iyte.ceng.internship.ims.model.response.users.PublicFirmResponse;
 import edu.iyte.ceng.internship.ims.repository.FirmRepository;
 import edu.iyte.ceng.internship.ims.service.mapper.FirmMapper;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,15 @@ public class FirmService {
     private UserService userService;
     private FirmMapper firmMapper;
     private AuthenticationService authenticationService;
+
+    public PublicFirmResponse getFirmPublicInformation(String userId) {
+        User user = userService.getUserById(userId);
+        Firm firm = firmRepository.findFirmByUser(user).orElseThrow(
+                () -> new BusinessException(ErrorCode.AccountMissing,
+                        "Firm with User ID " + userId + " does not exist")
+        );
+        return PublicFirmResponse.builder().firmName(firm.getFirmName()).build();
+    }
 
     public FirmResponse getFirm(String userId) {
         User user = userService.getUserById(userId);
