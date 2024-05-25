@@ -2,6 +2,7 @@ package edu.iyte.ceng.internship.ims.controller.users;
 
 import edu.iyte.ceng.internship.ims.model.request.users.UpdateFirmRequest;
 import edu.iyte.ceng.internship.ims.model.response.users.FirmResponse;
+import edu.iyte.ceng.internship.ims.model.response.users.PublicFirmResponse;
 import edu.iyte.ceng.internship.ims.service.AuthenticationService;
 import edu.iyte.ceng.internship.ims.service.FirmService;
 import jakarta.validation.Valid;
@@ -26,6 +27,12 @@ public class FirmController {
     @GetMapping("/get/{userId}")
     public ResponseEntity<FirmResponse> getFirm(@PathVariable("userId") String userId) {
         FirmResponse response = firmService.getFirm(userId);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @GetMapping("/get-public/{userId}")
+    public ResponseEntity<PublicFirmResponse> getFirmPublicInformation(@PathVariable("userId") String userId) {
+        PublicFirmResponse response = firmService.getFirmPublicInformation(userId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 }
